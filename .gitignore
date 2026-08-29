@@ -1,0 +1,11 @@
+# Local credentials — never commit these.
+.env
+.env.*
+!.env.example
+
+# Claude Code per-user, per-project settings. Holds ANTHROPIC_AUTH_TOKEN.
+.claude/settings.local.json
+
+# Editors / OS
+.DS_Store
+*.swp
