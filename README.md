@@ -142,12 +142,22 @@ Documented behavior, not bugs in this setup:
 ## Files
 
 ```
-.claude/settings.json                  committed; base URL + empty API key, no secrets
-.claude/settings.local.json.example    template for the key (copy, don't commit the copy)
-.env.example                           template for the shell-export path
-scripts/openrouter-env.sh              source this to load .env into your shell
-scripts/verify-openrouter.sh           one-token smoke test against /v1/messages
+.claude/settings.json                    committed; base URL + empty API key, no secrets
+.claude/settings.local.json.example      template for the key (copy, don't commit the copy)
+.claude/skills/analyze-pester-failures/  vendored Claude Code skill (MIT; see its NOTICE.md)
+.env.example                             template for the shell-export path
+scripts/openrouter-env.sh                source this to load .env into your shell
+scripts/verify-openrouter.sh             one-token smoke test against /v1/messages
 ```
+
+## Bundled skill
+
+`.claude/skills/analyze-pester-failures/` is vendored from
+[PowerShell/PowerShell](https://github.com/PowerShell/PowerShell) (MIT). It is a
+troubleshooting workflow for Pester test failures in that project's CI — unrelated
+to the gateway config, and inert unless you ask Claude Code to use it. Its script
+needs an authenticated `gh` CLI. Provenance and the local path rewrites are in
+[NOTICE.md](.claude/skills/analyze-pester-failures/NOTICE.md).
 
 ## Security
 
