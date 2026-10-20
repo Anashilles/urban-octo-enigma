@@ -74,7 +74,7 @@ export function PresenceButton() {
 }
 
 /** Who is here, what they're doing, and shortcuts to reach them. */
-export function PeopleSheet({ scene, actions }: { scene: SceneData; actions: RealtimeActions }) {
+export function PeopleSheet({ scene, actions, voiceSection }: { scene: SceneData; actions: RealtimeActions; voiceSection?: React.ReactNode }) {
   const t = useT();
   const panel = useMuseumStore((s) => s.panel);
   const setPanel = useMuseumStore((s) => s.setPanel);
@@ -94,6 +94,7 @@ export function PeopleSheet({ scene, actions }: { scene: SceneData; actions: Rea
           <SheetDescription className="text-ivory/60">{status === "online" ? t("museum.live.here", { count: others.length }) : t("museum.live.offlineHint")}</SheetDescription>
         </SheetHeader>
         <div className="grid gap-4 px-5 pb-8">
+          {voiceSection}
           <Button variant="glass" className="justify-self-start" onClick={actions.wave} disabled={status !== "online"} data-testid="wave">
             <HandIcon aria-hidden="true" />
             {t("museum.live.wave")}

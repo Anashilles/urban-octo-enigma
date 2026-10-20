@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSceneRefresher } from "./use-scene-refresher";
 import { PencilRulerIcon, UserRoundIcon } from "lucide-react";
@@ -18,10 +18,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/controls";
 import { usePreferences } from "@/store/preferences";
 import { useRealtimeStore } from "@/store/realtime-store";
+import { useVoiceStore } from "@/store/voice-store";
 import { RemoteAvatars } from "@/three/avatars/RemoteAvatars";
 import { PlacementTool, type PlacementConfirm } from "@/three/scenes/PlacementTool";
 import { FloatingReactions, NameTags, PeopleSheet, PresenceButton, SharedBanner, ViewerLiveActions, ViewerSharedBar } from "./LiveUI";
 import { useRealtime } from "./use-realtime";
+import { useVoice } from "./use-voice";
+import { VoiceButton, VoiceSection } from "./VoiceUI";
+import type { VoiceManager } from "@/features/voice/voice-manager";
 
 export default function LiveMuseum({ initialScene }: { initialScene: SceneData }) {
   const t = useT();
@@ -32,7 +36,10 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
   const placing = useMuseumStore((s) => Boolean(s.placement));
   const viewerSequence = useMuseumStore((s) => s.viewer?.sequence);
   const [hanging, setHanging] = useState(false);
-  const realtime = useRealtime(museumId, { selfUserId: initialScene.viewer.userId, refresh, enabled: true });
+  const voiceRef = useRef<VoiceManager | null>(null);
+  const realtime = useRealtime(museumId, { selfUserId: initialScene.viewer.userId, refresh, enabled: true, voice: voiceRef });
+  const voiceAllowed = initialScene.viewer.permissions["voice.join"] && initialScene.museum.privacy.voiceChatEnabled;
+  const voice = useVoice(voiceRef, realtime, voiceAllowed);
   const shared = useRealtimeStore((s) => s.shared);
   const following = useRealtimeStore((s) => s.following);
   const selfId = useRealtimeStore((s) => s.selfId);
@@ -54,6 +61,11 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
         return { status: s.status, selfId: s.selfId, peers: Object.keys(s.peers).length, shared: s.shared, following: s.following };
       },
       viewer: () => useMuseumStore.getState().viewer,
+      voice: () => {
+        const v = useVoiceStore.getState();
+        return { status: v.status, muted: v.muted, listenOnly: v.listenOnly, speaking: v.speaking, error: v.error, connected: v.connected };
+      },
+      peers: () => Object.values(useRealtimeStore.getState().peers).map((p) => ({ name: p.name, voice: p.voice, viewing: p.viewing })),
     };
   }, []);
 
@@ -179,6 +191,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
       }
       toolbar={
         <>
+          {voiceAllowed && <VoiceButton voice={voice} />}
           <PresenceButton />
           {canEdit && (
             <HudIconButton label={t("museum.hud.edit")} onClick={() => router.push(`/editor/${museumId}`)} testId="hud-edit">
@@ -192,7 +205,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
           {canEdit && <PlacementBar scene={scene} busy={hanging} />}
           <NameTags scene={scene} />
           <SharedBanner scene={scene} actions={realtime} />
-          <PeopleSheet scene={scene} actions={realtime} />
+          <PeopleSheet scene={scene} actions={realtime} voiceSection={<VoiceSection voice={voice} enabled={voiceAllowed} />} />
           {scene.frames.length === 0 && canEdit && !placing && (
             <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4">
               <div className="glass-dark pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 p-3 ps-5 text-sm text-ivory">

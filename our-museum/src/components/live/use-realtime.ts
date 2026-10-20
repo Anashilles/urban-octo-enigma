@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import { toast } from "sonner";
 import type { SharedView } from "@/components/museum/PhotoViewer";
 import { RealtimeClient } from "@/features/realtime/client";
+import type { VoiceManager } from "@/features/voice/voice-manager";
 import type { ClientMessage, ReactionEmoji, SharedState } from "@/features/realtime/protocol";
 import { emitRemoteGesture, latestPose } from "@/features/realtime/remote-poses";
 import { useT } from "@/i18n/client";
@@ -37,13 +38,16 @@ function openSharedViewer(state: SharedState) {
  * Connects the live museum to the realtime service and implements presence,
  * gestures and "Look Together" (shared viewing) on top of it.
  */
-export function useRealtime(museumId: string, opts: { selfUserId: string | null; refresh: () => Promise<void> | void; enabled: boolean }): RealtimeActions {
+export function useRealtime(
+  museumId: string,
+  opts: { selfUserId: string | null; refresh: () => Promise<void> | void; enabled: boolean; voice?: RefObject<VoiceManager | null> },
+): RealtimeActions {
   const t = useT();
   const router = useRouter();
   const clientRef = useRef<RealtimeClient | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewThrottle = useRef<{ last: number; timer: ReturnType<typeof setTimeout> | null; pending: SharedView | null }>({ last: 0, timer: null, pending: null });
-  const { selfUserId, refresh, enabled } = opts;
+  const { selfUserId, refresh, enabled, voice } = opts;
   const tRef = useRef(t);
   const refreshRef = useRef(refresh);
   useEffect(() => {
@@ -74,6 +78,8 @@ export function useRealtime(museumId: string, opts: { selfUserId: string | null;
         const peer = useRealtimeStore.getState().peers[peerId];
         if (peer && g === "wave") toast(tRef.current("museum.live.waved", { name: peer.name }), { duration: 2500 });
       },
+      onVoiceSignal: (from, data) => void voice?.current?.handleSignal(from, data).catch(() => undefined),
+      onPeerLeave: (id) => voice?.current?.peerLeft(id),
       onError: (code) => {
         if (code === "shared_busy") toast(tRef.current("museum.live.sharedBusy"));
       },
@@ -87,7 +93,7 @@ export function useRealtime(museumId: string, opts: { selfUserId: string | null;
       clientRef.current = null;
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
-  }, [museumId, selfUserId, enabled, router]);
+  }, [museumId, selfUserId, enabled, router, voice]);
 
   // Presence: what this visitor is looking at.
   useEffect(
