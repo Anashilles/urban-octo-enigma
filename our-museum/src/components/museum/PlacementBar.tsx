@@ -53,7 +53,7 @@ export function PlacementBar({ scene, busy }: { scene: SceneData; busy: boolean 
         : t(`editor.walls.problems.${(problem ?? "out_of_bounds") as "out_of_bounds"}`);
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-24 z-30 flex justify-center px-3" data-hud-panel>
+    <div className="pointer-events-none absolute inset-x-0 bottom-24 z-30 flex justify-center px-3">
       <div
         className="glass-dark pointer-events-auto flex w-full max-w-xl flex-col gap-3 rounded-2xl border border-white/10 p-3 text-ivory shadow-xl sm:flex-row sm:items-center"
         role="region"

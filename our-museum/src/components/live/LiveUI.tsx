@@ -168,7 +168,7 @@ export function SharedBanner({ scene, actions }: { scene: SceneData; actions: Re
   if (!shared || following || viewerOpen || shared.leaderId === selfId || dismissed === shared.id) return null;
   const title = photoTitle(scene, shared.photoId, t("museum.prompt.untitled")) ?? "";
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-20 z-30 flex justify-center px-4" data-hud-panel>
+    <div className="pointer-events-none absolute inset-x-0 top-20 z-30 flex justify-center px-4">
       <div className="glass-dark pointer-events-auto flex max-w-xl items-center gap-3 rounded-full border border-gold/40 py-1.5 ps-4 pe-1.5 text-sm text-ivory shadow-xl" role="status" data-testid="shared-banner">
         <UsersRoundIcon className="size-4 shrink-0 text-gold" aria-hidden="true" />
         <span className="min-w-0 truncate">{t("museum.live.sharedBanner", { name: shared.leaderName, title })}</span>
@@ -328,7 +328,7 @@ export function TourBanner({ scene, actions }: { scene: SceneData; actions: Real
   if (local?.mode === "following" && local.tourId === tour.tourId) return null;
   const name = scene.tours.find((x) => x.id === tour.tourId)?.name ?? "";
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-32 z-30 flex justify-center px-4" data-hud-panel>
+    <div className="pointer-events-none absolute inset-x-0 top-32 z-30 flex justify-center px-4">
       <div className="glass-dark pointer-events-auto flex max-w-xl items-center gap-3 rounded-full border border-gold/40 py-1.5 ps-4 pe-1.5 text-sm text-ivory shadow-xl" role="status" data-testid="tour-banner">
         <UsersRoundIcon className="size-4 shrink-0 text-gold" aria-hidden="true" />
         <span className="min-w-0 truncate">{t("museum.tours.banner", { name: tour.leaderName, tour: name })}</span>

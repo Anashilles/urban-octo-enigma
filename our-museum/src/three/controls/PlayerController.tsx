@@ -14,7 +14,7 @@ import {
 } from "@/features/rooms/geometry";
 import { usePreferences } from "@/store/preferences";
 import { pending, player } from "@/three/runtime";
-import { input, isTypingTarget, MOVEMENT_CODES, resetMovementInput } from "./input";
+import { input, isUiKeyTarget, MOVEMENT_CODES, resetMovementInput } from "./input";
 
 const WALK_SPEED = 2.1;
 const RUN_SPEED = 4.3;
@@ -103,7 +103,7 @@ export function PlayerController({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
-      if (isTypingTarget(target) || target?.closest?.("[data-hud-panel]")) return;
+      if (isUiKeyTarget(target)) return;
       if (!input.enabled) return;
       if (MOVEMENT_CODES.has(e.code)) {
         input.keys.add(e.code);

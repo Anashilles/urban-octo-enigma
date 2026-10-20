@@ -112,7 +112,7 @@ export function TourCard({ scene, hooks, onView }: { scene: SceneData; hooks: To
   const Next = dir === "rtl" ? ChevronLeftIcon : ChevronRightIcon;
   return (
     // Phones: under the top bar; larger screens: bottom corner, clear of the photo in front.
-    <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-3 sm:top-auto sm:bottom-4 sm:justify-start sm:px-4" data-hud-panel>
+    <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-3 sm:top-auto sm:bottom-4 sm:justify-start sm:px-4">
       <section
         className="glass-dark pointer-events-auto grid w-full max-w-md gap-3 rounded-2xl border border-gold/30 p-4 text-ivory shadow-xl sm:max-w-sm"
         aria-label={tour.name}

@@ -250,7 +250,7 @@ function GuideBanner({ scene }: { scene: SceneData }) {
   const frame = scene.frames.find((f) => f.id === guideFrameId);
   const photo = frame ? scene.photos.find((p) => p.id === frame.photoId) : null;
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-4" data-hud-panel>
+    <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-4">
       <div className="glass-dark pointer-events-auto flex items-center gap-3 rounded-full border border-gold/30 py-1.5 ps-4 pe-1.5 text-sm text-ivory" role="status">
         <span className="max-w-[55vw] truncate">{t("museum.guide.following", { title: photo?.title || t("museum.prompt.untitled") })}</span>
         <button type="button" onClick={() => setGuide(null)} className="rounded-full bg-white/10 px-3 py-1 text-xs hover:bg-white/20">

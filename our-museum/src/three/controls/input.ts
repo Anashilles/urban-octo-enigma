@@ -60,6 +60,20 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return target.getAttribute("role") === "textbox";
 }
 
+/**
+ * True when keyboard focus is somewhere keys mean something else: text
+ * fields, side panels, and open lists, menus, sliders, tabs or dialogs.
+ */
+export function isUiKeyTarget(target: EventTarget | null): boolean {
+  if (isTypingTarget(target)) return true;
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      "[data-hud-panel],[role=listbox],[role=option],[role=menu],[role=menuitem],[role=slider],[role=radiogroup],[role=radio],[role=tablist],[role=tab],[role=dialog],[role=alertdialog],select",
+    ),
+  );
+}
+
 /** Clears held keys and joystick (e.g. when a dialog opens) so the player stops. */
 export function resetMovementInput() {
   input.keys.clear();

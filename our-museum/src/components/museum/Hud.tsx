@@ -149,7 +149,7 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
               <BackIcon className={cn(dir === "rtl" && "rotate-180")} />
             </Link>
           </Button>
-          <div className="glass-dark min-w-0 rounded-2xl border border-white/10 px-4 py-2 text-ivory" data-hud-panel>
+          <div className="glass-dark min-w-0 rounded-2xl border border-white/10 px-4 py-2 text-ivory">
             <div className="flex items-center gap-2">
               <p className="truncate font-display text-lg leading-tight" dir="auto" data-testid="museum-name">
                 {scene.museum.name}
@@ -162,7 +162,7 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
           </div>
           {status}
         </div>
-        <div className="pointer-events-auto ms-auto flex shrink-0 flex-nowrap items-center justify-end gap-1.5 md:flex-wrap" data-hud-panel>
+        <div className="pointer-events-auto ms-auto flex shrink-0 flex-nowrap items-center justify-end gap-1.5 md:flex-wrap">
           <HudIconButton label={t("museum.hud.photos")} onClick={() => togglePanel("collections")} active={panel === "collections"} testId="hud-photos">
             <ImagesIcon />
           </HudIconButton>

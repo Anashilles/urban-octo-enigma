@@ -134,7 +134,7 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
                             {!frameId && ` ${t("museum.list.notHung")}`}
                           </p>
                           <div className="mt-2 flex flex-wrap gap-1.5">
-                            <Button size="sm" variant="glass" onClick={() => onView(photo.id, sequence)}>
+                            <Button size="sm" variant="glass" onClick={() => onView(photo.id, sequence)} data-testid="photo-view">
                               <EyeIcon aria-hidden="true" />
                               {t("museum.photos.view")}
                             </Button>
