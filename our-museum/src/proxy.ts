@@ -15,8 +15,10 @@ function originOf(url: string | undefined): string | null {
  */
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV !== "production";
-  const realtime = originOf(process.env.NEXT_PUBLIC_REALTIME_URL?.replace(/^ws/, "http"))?.replace(/^http/, "ws");
-  const storage = originOf(process.env.S3_PUBLIC_ENDPOINT ?? process.env.S3_ENDPOINT);
+  // Only upgrade when the site is served over HTTPS (a local `docker compose up` is plain HTTP).
+  const upgrade = !isDev && Boolean(process.env.APP_URL?.startsWith("https://"));
+  const realtime = originOf(process.env.REALTIME_PUBLIC_URL?.replace(/^ws/, "http"))?.replace(/^http/, "ws");
+  const storage = originOf(process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT);
   const connect = ["'self'", "blob:", "data:", realtime, storage, isDev ? "ws://localhost:*" : null].filter(Boolean);
   const images = ["'self'", "blob:", "data:", storage].filter(Boolean);
   return [
@@ -33,7 +35,7 @@ function buildCsp(nonce: string): string {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    ...(isDev ? [] : ["upgrade-insecure-requests"]),
+    ...(upgrade ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 }
 

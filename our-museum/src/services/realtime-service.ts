@@ -42,5 +42,5 @@ export async function issueRealtimeTicket(user: { id: string; displayName: strin
     .setExpirationTime(Math.floor(expiresAt.getTime() / 1000))
     .setJti(randomUUID())
     .sign(new TextEncoder().encode(realtimeTicketSecret()));
-  return { ticket, url: env().NEXT_PUBLIC_REALTIME_URL, expiresAt: expiresAt.toISOString() };
+  return { ticket, url: env().REALTIME_PUBLIC_URL, expiresAt: expiresAt.toISOString() };
 }

@@ -45,7 +45,8 @@ const serverEnvSchema = z.object({
   S3_FORCE_PATH_STYLE: bool,
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(15 * 1024 * 1024),
 
-  NEXT_PUBLIC_REALTIME_URL: z.string().default("ws://localhost:4001"),
+  // Read at request time on the server (ticket responses, CSP) — never baked into the build.
+  REALTIME_PUBLIC_URL: z.string().default("ws://localhost:4001"),
   REALTIME_INTERNAL_URL: z.string().default("http://localhost:4001"),
   REALTIME_TICKET_SECRET: z.string().min(32).optional(),
 
@@ -75,8 +76,9 @@ const BUILD_PLACEHOLDERS = {
 export function env(): ServerEnv {
   if (cached) return cached;
   const building = process.env.NEXT_PHASE === "phase-production-build";
-  const source = building ? { ...BUILD_PLACEHOLDERS, ...Object.fromEntries(Object.entries(process.env).filter(([, v]) => v)) } : process.env;
-  const parsed = serverEnvSchema.safeParse(source);
+  // Empty values count as unset (`FOO=` in .env files, `${FOO:-}` in docker compose).
+  const set = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v));
+  const parsed = serverEnvSchema.safeParse(building ? { ...BUILD_PLACEHOLDERS, ...set } : set);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid server environment configuration:\n${issues}`);

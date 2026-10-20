@@ -60,7 +60,7 @@ export async function getDiagnostics() {
       turnRelay: Boolean(e.TURN_URLS.length && e.TURN_SHARED_SECRET),
       cronSecretSet: Boolean(e.CRON_SECRET),
       uploadMaxBytes: e.UPLOAD_MAX_BYTES,
-      realtimeUrl: e.NEXT_PUBLIC_REALTIME_URL,
+      realtimeUrl: e.REALTIME_PUBLIC_URL,
     },
     rateLimits: apiLimiter.stats(),
     process: {

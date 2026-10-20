@@ -48,3 +48,6 @@ next-env.d.ts
 /playwright-report
 /blob-report
 /dist
+
+# env template (no secrets)
+!.env.example

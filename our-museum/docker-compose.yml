@@ -1,0 +1,91 @@
+# Self-hosted Our Museum: PostgreSQL + web app + realtime service.
+#
+#   cp .env.example .env      # then fill in the secrets (see docs/DEPLOYMENT.md)
+#   docker compose up -d --build
+#   docker compose run --rm migrate npm run db:seed   # optional demo account
+#
+# Serve it behind an HTTPS reverse proxy for anything beyond localhost:
+# browsers only allow microphones (voice chat) on secure origins.
+
+name: our-museum
+
+x-app-env: &app-env
+  APP_URL: ${APP_URL:-http://localhost:3000}
+  DATABASE_URL: postgresql://museum:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/our_museum
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: museum
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: our_museum
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U museum -d our_museum"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Applies database migrations, then exits. Also runs the optional seed.
+  migrate:
+    build: { context: ., target: tools }
+    environment:
+      <<: *app-env
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+      STORAGE_LOCAL_DIR: /data/storage
+      SEED_EMAIL: ${SEED_EMAIL:-}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  realtime:
+    build: { context: ., target: realtime }
+    restart: unless-stopped
+    environment:
+      # Only the ticket secret — the realtime service never sees auth secrets or the database.
+      REALTIME_TICKET_SECRET: ${REALTIME_TICKET_SECRET:?set REALTIME_TICKET_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      REALTIME_ALLOWED_ORIGINS: ${REALTIME_ALLOWED_ORIGINS:-}
+      REALTIME_TRUST_PROXY: ${REALTIME_TRUST_PROXY:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${REALTIME_PORT:-4001}:4001"
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+      REALTIME_TICKET_SECRET: ${REALTIME_TICKET_SECRET:?set REALTIME_TICKET_SECRET}
+      REALTIME_PUBLIC_URL: ${REALTIME_PUBLIC_URL:-ws://localhost:4001}
+      REALTIME_INTERNAL_URL: http://realtime:4001
+      STORAGE_SIGNING_SECRET: ${STORAGE_SIGNING_SECRET:-}
+      AUTH_REQUIRE_EMAIL_VERIFICATION: ${AUTH_REQUIRE_EMAIL_VERIFICATION:-false}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      EMAIL_DRIVER: ${EMAIL_DRIVER:-console}
+      EMAIL_FROM: ${EMAIL_FROM:-Our Museum <no-reply@localhost>}
+      SMTP_URL: ${SMTP_URL:-}
+      STUN_URLS: ${STUN_URLS:-}
+      TURN_URLS: ${TURN_URLS:-}
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - storage:/data/storage
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      realtime: { condition: service_started }
+
+volumes:
+  db:
+  storage:

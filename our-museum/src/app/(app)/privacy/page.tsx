@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PrivacyPage() {
   const { t } = await getT();
-  const contact = process.env.CONTACT_EMAIL ?? "the operator of this site";
+  const contact = process.env.CONTACT_EMAIL || "the operator of this site";
   const sections = [
     { title: t("legal.whatWeStoreTitle"), items: [t("legal.whatWeStore1"), t("legal.whatWeStore2"), t("legal.whatWeStore3"), t("legal.whatWeStore4")] },
     { title: t("legal.whoTitle"), items: [t("legal.who1"), t("legal.who2"), t("legal.who3")] },

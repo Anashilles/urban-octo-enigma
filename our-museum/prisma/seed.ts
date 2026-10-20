@@ -23,7 +23,7 @@ import { getScene } from "@/services/scene-service";
 import { photoKeys, storage } from "@/services/storage";
 import { saveTour } from "@/services/tour-service";
 
-const EMAIL = (process.env.SEED_EMAIL ?? "demo@ourmuseum.local").toLowerCase();
+const EMAIL = (process.env.SEED_EMAIL || "demo@ourmuseum.local").toLowerCase();
 
 interface Artwork {
   title: string;
@@ -122,7 +122,7 @@ async function main() {
     console.log(`Seed: ${EMAIL} already exists — nothing to do.`);
     return;
   }
-  const password = process.env.SEED_PASSWORD ?? randomBytes(9).toString("base64url");
+  const password = process.env.SEED_PASSWORD || randomBytes(9).toString("base64url");
   const userId = randomUUID().replace(/-/g, "");
   const user = await prisma.user.create({ data: { id: userId, email: EMAIL, displayName: "Demo", emailVerified: true, locale: "en" } });
   await prisma.account.create({ data: { id: randomUUID().replace(/-/g, ""), accountId: userId, providerId: "credential", userId, password: await hashPassword(password) } });

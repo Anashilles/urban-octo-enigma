@@ -1,0 +1,16 @@
+.git
+node_modules
+.next
+dist
+.data
+.env*
+!.env.example
+coverage
+test-results
+playwright-report
+blob-report
+src/generated
+*.tsbuildinfo
+next-env.d.ts
+Dockerfile
+docker-compose.yml
