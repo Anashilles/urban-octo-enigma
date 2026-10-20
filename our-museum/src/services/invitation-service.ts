@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/email";
 import { invitationEmail } from "@/lib/email/templates";
 import { env } from "@/lib/env";
 import { errors } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { apiLimiter, RATE_RULES, type RuleName } from "@/lib/rate-limit";
 import { createInvitationSchema, invitationTokenSchema, type CreateInvitationInput } from "@/lib/validation/invitations";
 import { requireMuseumAccess } from "./access";
@@ -112,11 +113,19 @@ export async function createInvitation(actor: Actor, museumId: string, input: Cr
 
   const url = invitationUrl(token);
   let emailed = false;
+  let emailFailed = false;
   if (data.email) {
-    await sendEmail(invitationEmail({ to: data.email, inviterName: actor.displayName, museumName: museum.name, url, expiresAt, locale }));
-    emailed = true;
+    // The invitation exists either way; if delivery fails the owner still gets
+    // the one-time link to share themselves rather than losing it to an error.
+    try {
+      await sendEmail(invitationEmail({ to: data.email, inviterName: actor.displayName, museumName: museum.name, url, expiresAt, locale }));
+      emailed = true;
+    } catch (error) {
+      emailFailed = true;
+      logger.warn("invitation_email_failed", { museumId, invitationId: row.id, error: error instanceof Error ? error.message.slice(0, 200) : "unknown" });
+    }
   }
-  return { invitation: toResponse(row), token, url, emailed };
+  return { invitation: toResponse(row), token, url, emailed, emailFailed };
 }
 
 export async function listInvitations(actorId: string, museumId: string) {

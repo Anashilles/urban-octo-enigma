@@ -54,9 +54,10 @@ Listed plainly so nobody mistakes them for finished:
 
 1. **Public deployment** — not done. Managed-hosting instructions (Vercel +
    separate realtime host) are written but untested.
-2. **Email delivery** — only the `console` driver has been exercised
-   (verification, reset and invitation emails are logged). The SMTP path uses
-   nodemailer but was never tested against a real provider.
+2. **Email delivery** — the SMTP path is tested against a local SMTP server
+   with authentication (English and Arabic messages, a full password reset by
+   email, header-injection attempts, a bounced invitation). Not tried: TLS
+   (`smtps://` / STARTTLS) and real providers' deliverability (SPF/DKIM).
 3. **Voice on real networks** — tested only between browser sessions on one
    machine with fake microphones. TURN (coturn REST credentials) is
    implemented but untested; Safari/iOS voice is untested. Voice is a mesh,

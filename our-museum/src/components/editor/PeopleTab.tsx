@@ -274,13 +274,14 @@ function InviteCard({ museumId, emailVerified, onCreated }: { museumId: string; 
     setBusy(true);
     setLink(null);
     try {
-      const res = await api<{ url: string; emailed: boolean }>(`/api/museums/${museumId}/invitations`, {
+      const res = await api<{ url: string; emailed: boolean; emailFailed?: boolean }>(`/api/museums/${museumId}/invitations`, {
         method: "POST",
         body: { role, expiresInHours: hours, maxUses: uses, email: email.trim() || undefined },
       });
       setLink(res.url);
       setCopied(false);
       if (res.emailed) toast.success(t("editor.people.emailed", { email: email.trim() }));
+      if (res.emailFailed) toast.warning(t("editor.people.emailFailed"), { duration: 10_000 });
       setEmail("");
       onCreated();
     } catch (e) {

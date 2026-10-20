@@ -159,7 +159,7 @@ Commonly set:
 | `STORAGE_LOCAL_DIR` | `./.data/storage` | `/data/storage` in the Docker image; must be persistent |
 | `STORAGE_SIGNING_SECRET` | derived | Separate secret for local-storage URL signatures |
 | `UPLOAD_MAX_BYTES` | 15 MB | Per photo |
-| `EMAIL_DRIVER` / `SMTP_URL` / `EMAIL_FROM` | `console` | Without SMTP, verification/reset/invitation emails are only logged |
+| `EMAIL_DRIVER` / `SMTP_URL` / `EMAIL_FROM` | `console` | Without SMTP, verification/reset/invitation emails are only logged. Use `smtps://user:pass@host:465` (or port 587, STARTTLS is negotiated automatically). Set up SPF/DKIM for `EMAIL_FROM`'s domain |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Turn on once SMTP works |
 | `ADMIN_EMAILS` | — | Comma-separated; admins also need a verified email |
 | `STUN_URLS` / `TURN_URLS` / `TURN_SHARED_SECRET` | — | Voice connectivity, see below |

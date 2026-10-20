@@ -702,6 +702,7 @@ const en = {
       copied: "Link copied.",
       share: "Share…",
       emailed: "Invitation sent to {email}.",
+      emailFailed: "The email couldn't be sent. Copy the link below and share it yourself.",
       invitations: "Invitations",
       noInvitations: "No invitations yet.",
       usesCount: "{uses} of {max} used",

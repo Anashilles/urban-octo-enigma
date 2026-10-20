@@ -706,6 +706,7 @@ const ar: DeepStrings<Messages> = {
       copied: "تم نسخ الرابط.",
       share: "مشاركة…",
       emailed: "أُرسلت الدعوة إلى {email}.",
+      emailFailed: "تعذّر إرسال البريد. انسخ الرابط أدناه وشاركه بنفسك.",
       invitations: "الدعوات",
       noInvitations: "لا توجد دعوات بعد.",
       usesCount: "استُخدمت {uses} من {max}",
