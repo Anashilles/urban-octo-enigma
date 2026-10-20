@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import { toast } from "sonner";
 import type { SharedView } from "@/components/museum/PhotoViewer";
+import { api } from "@/lib/api/client";
 import { RealtimeClient } from "@/features/realtime/client";
 import type { VoiceManager } from "@/features/voice/voice-manager";
 import type { ClientMessage, ReactionEmoji, SharedState } from "@/features/realtime/protocol";
@@ -40,6 +41,13 @@ function followTour(index: number, tourId: string) {
   const selfId = useRealtimeStore.getState().selfId ?? "self";
   if (!scene) return false;
   return goToTourStop(scene, { tourId, index, mode: "following" }, { side: followerSide(selfId) });
+}
+
+function patchReactions(photoId: string, counts: (r: Record<string, number>) => Record<string, number>, mine?: (m: string[]) => string[]) {
+  useMuseumStore.getState().patchScene((s) => ({
+    ...s,
+    photos: s.photos.map((p) => (p.id === photoId ? { ...p, reactions: counts(p.reactions), myReactions: mine ? mine(p.myReactions) : p.myReactions } : p)),
+  }));
 }
 
 function openSharedViewer(state: SharedState) {
@@ -92,6 +100,8 @@ export function useRealtime(
       },
       onVoiceSignal: (from, data) => void voice?.current?.handleSignal(from, data).catch(() => undefined),
       onPeerLeave: (id) => voice?.current?.peerLeft(id),
+      // Someone added a reaction: count it straight away (the server has it too).
+      onReaction: (_peer, photoId, emoji) => patchReactions(photoId, (r) => ({ ...r, [emoji]: (r[emoji] ?? 0) + 1 })),
       onError: (code) => {
         if (code === "shared_busy") toast(tRef.current("museum.live.sharedBusy"));
         if (code === "tour_busy") toast(tRef.current("museum.tours.busy"));
@@ -247,8 +257,20 @@ export function useRealtime(
         useRealtimeStore.setState({ following: false, dismissedSharedId: s.shared.id });
       },
       react: (photoId, emoji) => {
-        send({ t: "react", photoId, emoji });
-        pushReaction({ photoId, emoji, from: useRealtimeStore.getState().selfId ?? "self" });
+        const photo = useMuseumStore.getState().scene?.photos.find((p) => p.id === photoId);
+        const adding = !photo?.myReactions.includes(emoji);
+        patchReactions(
+          photoId,
+          (r) => ({ ...r, [emoji]: Math.max(0, (r[emoji] ?? 0) + (adding ? 1 : -1)) }),
+          (mine) => (adding ? [...mine, emoji] : mine.filter((e) => e !== emoji)),
+        );
+        if (adding) {
+          send({ t: "react", photoId, emoji });
+          pushReaction({ photoId, emoji, from: useRealtimeStore.getState().selfId ?? "self" });
+        }
+        api<{ reactions: Record<string, number>; myReactions: string[] }>(`/api/museums/${museumId}/photos/${photoId}/reactions`, { method: "PUT", body: { emoji } })
+          .then((r) => patchReactions(photoId, () => r.reactions, () => r.myReactions))
+          .catch(() => void refreshRef.current());
       },
       // The local avatar plays it and the gesture subscription forwards it to others.
       wave: () => emitLocalGesture("wave"),
@@ -284,5 +306,5 @@ export function useRealtime(
         requestMove({ x: p.x + rx * 0.9 - fx * 1.7, z: p.z + rz * 0.9 - fz * 1.7, yaw: p.yaw, duration: 0.9 });
       },
     };
-  }, [send]);
+  }, [send, museumId]);
 }

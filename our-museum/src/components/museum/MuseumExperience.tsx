@@ -19,6 +19,7 @@ import { goToFrame, returnToSavedPose } from "./navigation";
 import { PhotoList } from "./PhotoList";
 import { PhotosPanel } from "./PhotosPanel";
 import { PhotoViewer, type SharedView } from "./PhotoViewer";
+import { AmbientAudio } from "./AmbientAudio";
 import { SettingsSheet } from "./SettingsSheet";
 import { ToursPanel, TourCard, type TourHooks } from "./ToursUI";
 import { WebGLFallback } from "./WebGLFallback";
@@ -149,6 +150,7 @@ export function MuseumExperience(props: MuseumExperienceProps) {
       {coarse && !viewer && <MobileControls canInteract={Boolean(focusedFrameId)} onInteract={() => focusedFrameId && openFrame(focusedFrameId)} />}
 
       <GuideBanner scene={scene} />
+      <AmbientAudio />
       <TourCard scene={scene} hooks={props.tourHooks ?? {}} onView={openFrame} />
       <ToursPanel scene={scene} hooks={props.tourHooks ?? {}} />
 

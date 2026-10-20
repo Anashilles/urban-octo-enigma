@@ -92,6 +92,19 @@ export function SettingsSheet({
             </Button>
           </section>
           <Separator className="bg-white/10" />
+          <section className="grid gap-4">
+            <h3 className="text-eyebrow text-gold">{t("museum.settings.audio")}</h3>
+            <Row id="ambient" label={t("museum.settings.audioOn")}>
+              <Switch id="ambient" checked={p.ambientAudio} onCheckedChange={(v) => p.set({ ambientAudio: v })} data-testid="ambient-toggle" />
+            </Row>
+            <div className="grid gap-2">
+              <Label htmlFor="volume" className="text-ivory/90">
+                {t("museum.settings.volume")}
+              </Label>
+              <Slider id="volume" min={0} max={1} step={0.05} value={[p.ambientVolume]} onValueChange={([v]) => p.set({ ambientVolume: v! })} disabled={!p.ambientAudio} />
+            </div>
+          </section>
+          <Separator className="bg-white/10" />
           <section className="grid gap-3">
             <h3 className="text-eyebrow text-gold">{t("museum.settings.graphics")}</h3>
             <div className="grid gap-2">

@@ -5,6 +5,7 @@ import { useSyncExternalStore, type ReactNode } from "react";
 import {
   ArrowLeftIcon,
   CircleHelpIcon,
+  EllipsisIcon,
   ImagesIcon,
   MaximizeIcon,
   MinimizeIcon,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/controls";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { SceneData } from "@/features/museums/scene-types";
 import { useI18n } from "@/i18n/client";
 import { cn } from "@/lib/utils";
@@ -52,6 +54,21 @@ export function useIsCoarse() {
   return useSyncExternalStore(
     subscribeCoarse,
     () => window.matchMedia("(pointer: coarse)").matches,
+    () => false,
+  );
+}
+
+function subscribeNarrow(cb: () => void) {
+  const mq = window.matchMedia("(max-width: 639px)");
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+/** Phone-sized screens, where secondary HUD buttons move into a menu. */
+export function useIsNarrow() {
+  return useSyncExternalStore(
+    subscribeNarrow,
+    () => window.matchMedia("(max-width: 639px)").matches,
     () => false,
   );
 }
@@ -105,6 +122,7 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
   const { t, dir } = useI18n();
   const locked = usePointerLocked();
   const coarse = useIsCoarse();
+  const narrow = useIsNarrow();
   const fullscreen = useSyncExternalStore(subscribeFullscreen, () => Boolean(document.fullscreenElement), () => false);
   const focusedFrameId = useMuseumStore((s) => s.focusedFrameId);
   const currentRoomId = useMuseumStore((s) => s.currentRoomId);
@@ -133,40 +151,68 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
           </Button>
           <div className="glass-dark min-w-0 rounded-2xl border border-white/10 px-4 py-2 text-ivory" data-hud-panel>
             <div className="flex items-center gap-2">
-              <p className="truncate font-display text-lg leading-tight" data-testid="museum-name">
+              <p className="truncate font-display text-lg leading-tight" dir="auto" data-testid="museum-name">
                 {scene.museum.name}
               </p>
               {badge}
             </div>
-            <p className="truncate text-xs text-ivory/65" aria-live="polite" data-testid="current-room">
+            <p className="truncate text-xs text-ivory/65" dir="auto" aria-live="polite" data-testid="current-room">
               {room?.name ?? t("museum.betweenRooms")}
             </p>
           </div>
           {status}
         </div>
-        <div className="pointer-events-auto ms-auto flex flex-wrap items-center justify-end gap-1.5" data-hud-panel>
+        <div className="pointer-events-auto ms-auto flex shrink-0 flex-nowrap items-center justify-end gap-1.5 md:flex-wrap" data-hud-panel>
           <HudIconButton label={t("museum.hud.photos")} onClick={() => togglePanel("collections")} active={panel === "collections"} testId="hud-photos">
             <ImagesIcon />
           </HudIconButton>
           {toolbar}
-          {scene.tours.length > 0 && (
-            <HudIconButton label={t("museum.tours.title")} onClick={() => togglePanel("tours")} active={panel === "tours"} testId="hud-tours">
-              <RouteIcon />
-            </HudIconButton>
+          {narrow ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="glass" size="icon" aria-label={t("museum.hud.menu")} data-testid="hud-more">
+                  <EllipsisIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-48">
+                {scene.tours.length > 0 && (
+                  <DropdownMenuItem onSelect={() => togglePanel("tours")} data-testid="hud-tours">
+                    <RouteIcon /> {t("museum.tours.title")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={() => togglePanel("settings")} data-testid="hud-settings">
+                  <SettingsIcon /> {t("museum.hud.settings")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => togglePanel("help")} data-testid="hud-help">
+                  <CircleHelpIcon /> {t("museum.hud.help")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={toggleFullscreen} data-testid="hud-fullscreen">
+                  {fullscreen ? <MinimizeIcon /> : <MaximizeIcon />} {fullscreen ? t("museum.hud.exitFullscreen") : t("museum.hud.fullscreen")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              {scene.tours.length > 0 && (
+                <HudIconButton label={t("museum.tours.title")} onClick={() => togglePanel("tours")} active={panel === "tours"} testId="hud-tours">
+                  <RouteIcon />
+                </HudIconButton>
+              )}
+              <HudIconButton label={t("museum.hud.settings")} onClick={() => togglePanel("settings")} active={panel === "settings"} testId="hud-settings">
+                <SettingsIcon />
+              </HudIconButton>
+              <HudIconButton label={t("museum.hud.help")} onClick={() => togglePanel("help")} active={panel === "help"} testId="hud-help">
+                <CircleHelpIcon />
+              </HudIconButton>
+              <HudIconButton
+                label={fullscreen ? t("museum.hud.exitFullscreen") : t("museum.hud.fullscreen")}
+                onClick={toggleFullscreen}
+                testId="hud-fullscreen"
+              >
+                {fullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+              </HudIconButton>
+            </>
           )}
-          <HudIconButton label={t("museum.hud.settings")} onClick={() => togglePanel("settings")} active={panel === "settings"} testId="hud-settings">
-            <SettingsIcon />
-          </HudIconButton>
-          <HudIconButton label={t("museum.hud.help")} onClick={() => togglePanel("help")} active={panel === "help"} testId="hud-help">
-            <CircleHelpIcon />
-          </HudIconButton>
-          <HudIconButton
-            label={fullscreen ? t("museum.hud.exitFullscreen") : t("museum.hud.fullscreen")}
-            onClick={toggleFullscreen}
-            testId="hud-fullscreen"
-          >
-            {fullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
-          </HudIconButton>
         </div>
       </div>
 

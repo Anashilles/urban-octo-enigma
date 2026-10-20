@@ -334,7 +334,7 @@ model PhotoReaction {
   photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// One of: heart, smile, wow, tear
+  /// One of REACTION_EMOJIS (src/features/realtime/protocol.ts)
   emoji     String
   createdAt DateTime @default(now())
 

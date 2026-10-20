@@ -12,6 +12,7 @@ export interface RealtimeHandlers {
   onGesture?: (peerId: string, gesture: "wave") => void;
   onVoiceSignal?: (from: string, data: VoiceSignal) => void;
   onPeerLeave?: (peerId: string) => void;
+  onReaction?: (peerId: string, photoId: string, emoji: string) => void;
   onError?: (code: string, message?: string) => void;
 }
 
@@ -176,6 +177,7 @@ export class RealtimeClient {
         return;
       case "react":
         pushReaction({ photoId: msg.photoId, emoji: msg.emoji, from: msg.id });
+        this.handlers.onReaction?.(msg.id, msg.photoId, msg.emoji);
         return;
       case "voice.signal":
         this.handlers.onVoiceSignal?.(msg.from, msg.data);

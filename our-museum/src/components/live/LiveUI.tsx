@@ -51,7 +51,7 @@ export function PresenceButton() {
   return (
     <Button
       variant="glass"
-      className={cn("h-10 gap-2 rounded-full px-3", panel === "people" && "bg-white/15 ring-1 ring-gold/60")}
+      className={cn("h-10 gap-1.5 rounded-full px-2.5 sm:gap-2 sm:px-3", panel === "people" && "bg-white/15 ring-1 ring-gold/60")}
       onClick={() => setPanel(panel === "people" ? null : "people")}
       aria-label={label}
       aria-pressed={panel === "people"}
@@ -60,7 +60,7 @@ export function PresenceButton() {
       data-count={others.length}
     >
       {status === "unavailable" ? <WifiOffIcon aria-hidden="true" /> : <UsersRoundIcon aria-hidden="true" />}
-      <span className="flex -space-x-1.5 rtl:space-x-reverse" aria-hidden="true">
+      <span className="hidden -space-x-1.5 sm:flex rtl:space-x-reverse" aria-hidden="true">
         {others.slice(0, 3).map((p) => (
           <span key={p.id} className="grid size-5 place-items-center rounded-full border border-ink text-[10px] font-semibold text-ink" style={{ background: p.avatar.accent }}>
             {p.name.slice(0, 1).toUpperCase()}
@@ -211,10 +211,11 @@ export function ViewerLiveActions({ photoId, sequence, actions, canShare, canRea
   const shared = useRealtimeStore((s) => s.shared);
   const following = useRealtimeStore((s) => s.following);
   const others = usePeers().length;
-  if (status !== "online") return null;
+  const photo = useMuseumStore((s) => s.scene?.photos.find((p) => p.id === photoId));
+  if (status !== "online" && !canReact) return null;
   return (
     <>
-      {canShare && !following && others > 0 && (
+      {status === "online" && canShare && !following && others > 0 && (
         <Button size="sm" variant="gold" onClick={() => actions.startShared(photoId, sequence)} title={t("museum.live.lookTogetherHint")} data-testid="look-together" disabled={Boolean(shared)}>
           <UsersRoundIcon aria-hidden="true" />
           {t("museum.live.lookTogether")}
@@ -222,18 +223,27 @@ export function ViewerLiveActions({ photoId, sequence, actions, canShare, canRea
       )}
       {canReact && (
         <div className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/5 p-0.5" role="group" aria-label={t("museum.live.reactions")}>
-          {REACTION_EMOJIS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              className="grid size-8 place-items-center rounded-full text-lg transition hover:scale-110 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none"
-              onClick={() => actions.react(photoId, e as ReactionEmoji)}
-              aria-label={`${t("museum.live.react")} ${e}`}
-              data-testid="reaction"
-            >
-              <span aria-hidden="true">{e}</span>
-            </button>
-          ))}
+          {REACTION_EMOJIS.map((e) => {
+            const count = photo?.reactions[e] ?? 0;
+            const mine = photo?.myReactions.includes(e) ?? false;
+            return (
+              <button
+                key={e}
+                type="button"
+                className={cn(
+                  "flex h-8 min-w-8 items-center justify-center gap-1 rounded-full px-1.5 text-lg transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-gold focus-visible:outline-none",
+                  mine && "bg-gold/25 ring-1 ring-gold/60",
+                )}
+                onClick={() => actions.react(photoId, e as ReactionEmoji)}
+                aria-label={`${t("museum.live.react")} ${e}`}
+                aria-pressed={mine}
+                data-testid="reaction"
+              >
+                <span aria-hidden="true">{e}</span>
+                {count > 0 && <span className="text-xs text-ivory/80 tabular-nums">{count}</span>}
+              </button>
+            );
+          })}
         </div>
       )}
     </>
