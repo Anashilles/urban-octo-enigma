@@ -17,6 +17,7 @@ export const TICKET_ISSUER = "our-museum";
 export const TICKET_TTL_SECONDS = 60;
 
 export const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "👏", "✨"] as const;
+export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
 /** Claims carried by a realtime ticket (a short-lived HS256 JWT). */
 export interface TicketClaims {
@@ -131,7 +132,7 @@ export type ServerMessage =
   | { t: "poses"; list: PoseTuple[] }
   | { t: "gesture"; id: string; g: "wave" }
   | { t: "shared"; state: SharedState | null }
-  | { t: "react"; id: string; photoId: string; emoji: (typeof REACTION_EMOJIS)[number] }
+  | { t: "react"; id: string; photoId: string; emoji: ReactionEmoji }
   | { t: "voice.signal"; from: string; data: VoiceSignal }
   | { t: "museum.changed"; scope: ChangeScope; actorId: string | null }
   | { t: "kicked"; reason: "removed" | "deleted" | "replaced" }

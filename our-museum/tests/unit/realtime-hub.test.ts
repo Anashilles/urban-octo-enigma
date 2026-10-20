@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultAvatar } from "@/features/avatars/config";
 import { clientMessageSchema, type ServerMessage, type TicketClaims } from "@/features/realtime/protocol";
-import { Hub, type Conn } from "../../realtime/hub";
+import { Hub } from "../../realtime/hub";
 
 type Perms = TicketClaims["perms"];
 const ALL: Perms = { sharedStart: true, sharedManage: false, voice: true, react: true };

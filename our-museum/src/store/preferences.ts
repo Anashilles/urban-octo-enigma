@@ -22,6 +22,8 @@ export interface PreferencesState {
   ambientAudio: boolean;
   ambientVolume: number; // 0 – 1
   tutorialSeen: boolean;
+  /** Open the photograph automatically when someone starts Look Together. */
+  autoFollowShared: boolean;
   set: (patch: Partial<Omit<PreferencesState, "set" | "reset">>) => void;
   reset: () => void;
 }
@@ -41,6 +43,7 @@ const defaults = () => ({
   ambientAudio: false,
   ambientVolume: 0.4,
   tutorialSeen: false,
+  autoFollowShared: true,
 });
 
 export const usePreferences = create<PreferencesState>()(

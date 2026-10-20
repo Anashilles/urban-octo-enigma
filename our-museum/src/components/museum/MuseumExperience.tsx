@@ -18,7 +18,7 @@ import { MobileControls } from "./MobileControls";
 import { goToFrame, returnToSavedPose } from "./navigation";
 import { PhotoList } from "./PhotoList";
 import { PhotosPanel } from "./PhotosPanel";
-import { PhotoViewer } from "./PhotoViewer";
+import { PhotoViewer, type SharedView } from "./PhotoViewer";
 import { SettingsSheet } from "./SettingsSheet";
 import { WebGLFallback } from "./WebGLFallback";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -56,6 +56,13 @@ export interface MuseumExperienceProps {
   onPhotoTextureError?: () => void;
   /** Disable pointer lock (e.g. while placing a photo with a visible cursor). */
   allowPointerLock?: boolean;
+  /** Sideways randomisation of the spawn point (shared museums). */
+  spawnSpread?: number;
+  /** Shared viewing: followers can't navigate; their view mirrors the leader's. */
+  viewerLocked?: boolean;
+  viewerSyncedView?: SharedView | null;
+  onViewerViewChange?: (view: SharedView) => void;
+  viewerOverlay?: (photoId: string) => ReactNode;
 }
 
 export function MuseumExperience(props: MuseumExperienceProps) {
@@ -117,6 +124,7 @@ export function MuseumExperience(props: MuseumExperienceProps) {
           onInteractFrame={openFrame}
           onShortcut={onShortcut}
           allowPointerLock={props.allowPointerLock ?? !coarse}
+          spawnSpread={props.spawnSpread}
           onPhotoTextureError={props.onPhotoTextureError}
         >
           <GuideArrow scene={scene} onArrive={() => toast(t("museum.guide.arrived"))} />
@@ -217,6 +225,10 @@ export function MuseumExperience(props: MuseumExperienceProps) {
           }}
           actions={props.viewerActions?.(viewerPhotoId)}
           sharedBanner={props.sharedBanner}
+          navigationLocked={props.viewerLocked}
+          syncedView={props.viewerSyncedView}
+          onViewChange={props.onViewerViewChange}
+          overlay={props.viewerOverlay?.(viewerPhotoId)}
         />
       )}
     </div>

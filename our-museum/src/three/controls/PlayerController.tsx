@@ -31,6 +31,8 @@ interface Props {
   rooms: RoomShape[];
   boxes: Rect[];
   spawn: { x: number; z: number; yaw: number };
+  /** Random sideways offset (m) at spawn so visitors arriving together don't overlap. */
+  spawnSpread?: number;
   /** Called with the focused frame id when it changes. */
   onFocus: (id: string | null) => void;
   onInteract: (frameId: string) => void;
@@ -61,6 +63,7 @@ export function PlayerController({
   rooms,
   boxes,
   spawn,
+  spawnSpread = 0,
   onFocus,
   onInteract,
   onRoomChange,
@@ -81,13 +84,18 @@ export function PlayerController({
   const camDistance = useRef(thirdPersonDistance);
 
   // Initial pose.
+  const spreadOffset = useRef<number | null>(null);
   useEffect(() => {
-    player.x = spawn.x;
-    player.z = spawn.z;
+    spreadOffset.current ??= (Math.random() * 2 - 1) * spawnSpread;
+    const side = spreadOffset.current;
+    const [x, z] = resolveCircleCollisions(spawn.x + Math.cos(spawn.yaw) * side, spawn.z - Math.sin(spawn.yaw) * side, PLAYER_RADIUS, boxes);
+    player.x = x;
+    player.z = z;
     player.yaw = spawn.yaw;
     player.pitch = 0;
     velocity.current.set(0, 0);
-  }, [spawn.x, spawn.z, spawn.yaw]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-spawn only when the spawn point itself changes
+  }, [spawn.x, spawn.z, spawn.yaw, spawnSpread]);
 
   // Keyboard, pointer lock and drag-to-look.
   useEffect(() => {
@@ -223,6 +231,7 @@ export function PlayerController({
       const blocked = segmentHitDistance(player.x, player.z, m.x, m.z, boxes, 0) < Math.hypot(m.x - player.x, m.z - player.z) - 0.05;
       if (m.duration <= 0 || blocked || prefs.reducedMotion) {
         Object.assign(player, target);
+        [player.x, player.z] = resolveCircleCollisions(player.x, player.z, PLAYER_RADIUS, boxes);
         glide.current = null;
       } else {
         glide.current = { from: { ...player }, to: target, t: 0, duration: m.duration };
@@ -240,7 +249,11 @@ export function PlayerController({
       player.pitch = g.from.pitch + (g.to.pitch - g.from.pitch) * k;
       player.speed = 1.5;
       player.moving = g.t < 1;
-      if (g.t >= 1) glide.current = null;
+      if (g.t >= 1) {
+        glide.current = null;
+        // Never come to rest inside furniture or a wall.
+        [player.x, player.z] = resolveCircleCollisions(player.x, player.z, PLAYER_RADIUS, boxes);
+      }
       input.lookX = input.lookY = 0;
     } else {
       // Look.

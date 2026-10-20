@@ -38,6 +38,7 @@ interface Props {
   onInteractFrame: (frameId: string) => void;
   onShortcut?: (code: string) => void;
   allowPointerLock?: boolean;
+  spawnSpread?: number;
   keyboard?: boolean;
   /** Additional scene content: avatars, remote visitors, placement preview. */
   children?: ReactNode;
@@ -50,6 +51,7 @@ export function MuseumWorld({
   onInteractFrame,
   onShortcut,
   allowPointerLock = true,
+  spawnSpread = 0,
   keyboard = true,
   children,
   onPhotoTextureError,
@@ -142,6 +144,7 @@ export function MuseumWorld({
         pickAtPointer={pickAtPointer}
         onShortcut={onShortcut}
         allowPointerLock={allowPointerLock}
+        spawnSpread={spawnSpread}
         keyboard={keyboard}
       />
       {children}

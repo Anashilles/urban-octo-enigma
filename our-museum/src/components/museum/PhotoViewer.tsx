@@ -34,9 +34,24 @@ interface Props {
   /** Extra actions (look together, go to photo, reactions). */
   actions?: ReactNode;
   sharedBanner?: ReactNode;
+  /** Following someone else's shared viewing: they choose the photo and the zoom. */
+  navigationLocked?: boolean;
+  /** The leader's zoom and pan (pan as a fraction of the image size). */
+  syncedView?: SharedView | null;
+  /** Leader only: reports zoom/pan so followers can mirror it. */
+  onViewChange?: (view: SharedView) => void;
+  /** Drawn over the photograph (floating reactions). */
+  overlay?: ReactNode;
 }
 
-export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onClose, actions, sharedBanner }: Props) {
+export interface SharedView {
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
+export function PhotoViewer(props: Props) {
+  const { photos, sequence, photoId, shared, onNavigate, onClose, actions, sharedBanner, navigationLocked = false, syncedView, onViewChange, overlay } = props;
   const { t, dir, formatDate } = useI18n();
   const photo = photos.get(photoId);
   const index = Math.max(0, sequence.indexOf(photoId));
@@ -45,6 +60,7 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef<{ startDist: number; startZoom: number; swipeX: number; startX: number; moved: boolean } | null>(null);
 
@@ -72,12 +88,21 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
     }
   }, [index, sequence, photos]);
 
+  // Leader: tell followers how the photograph is framed.
+  useEffect(() => {
+    if (!onViewChange) return;
+    const img = imgRef.current;
+    const w = img?.clientWidth || 1;
+    const h = img?.clientHeight || 1;
+    onViewChange({ zoom, panX: offset.x / zoom / w, panY: offset.y / zoom / h });
+  }, [zoom, offset, onViewChange]);
+
   const go = useCallback(
     (delta: number) => {
-      if (sequence.length < 2) return;
+      if (sequence.length < 2 || navigationLocked) return;
       onNavigate(sequence[(index + delta + sequence.length) % sequence.length]!);
     },
-    [index, sequence, onNavigate],
+    [index, sequence, onNavigate, navigationLocked],
   );
 
   const clampOffset = useCallback((o: { x: number; y: number }, z: number) => {
@@ -98,6 +123,7 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
   );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (navigationLocked) return;
     const nextKey = dir === "rtl" ? "ArrowLeft" : "ArrowRight";
     const prevKey = dir === "rtl" ? "ArrowRight" : "ArrowLeft";
     if (e.key === nextKey) {
@@ -112,10 +138,12 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
   };
 
   const onWheel = (e: React.WheelEvent) => {
+    if (navigationLocked) return;
     setZoomClamped(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (navigationLocked) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setDragging(true);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -161,6 +189,10 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
   };
 
   if (!photo) return null;
+  const following = navigationLocked && syncedView;
+  const transform = following
+    ? `scale(${syncedView.zoom}) translate(${syncedView.panX * 100}%, ${syncedView.panY * 100}%)`
+    : `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`;
   const PrevIcon = dir === "rtl" ? ChevronRightIcon : ChevronLeftIcon;
   const NextIcon = dir === "rtl" ? ChevronLeftIcon : ChevronRightIcon;
 
@@ -183,15 +215,19 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
               {t("museum.viewer.counter", { current: index + 1, total: sequence.length })}
             </span>
             <div className="ms-auto flex items-center gap-1.5">
-              <Button variant="glass" size="icon-sm" onClick={() => setZoomClamped(zoom / 1.4)} aria-label={t("museum.viewer.zoomOut")} disabled={zoom <= MIN_ZOOM}>
-                <MinusIcon />
-              </Button>
-              <Button variant="glass" size="icon-sm" onClick={() => setZoomClamped(zoom * 1.4)} aria-label={t("museum.viewer.zoomIn")} disabled={zoom >= MAX_ZOOM}>
-                <PlusIcon />
-              </Button>
-              <Button variant="glass" size="icon-sm" onClick={() => setZoomClamped(1)} aria-label={t("museum.viewer.resetZoom")} disabled={zoom === 1}>
-                <RotateCcwIcon />
-              </Button>
+              {!navigationLocked && (
+                <>
+                  <Button variant="glass" size="icon-sm" onClick={() => setZoomClamped(zoom / 1.4)} aria-label={t("museum.viewer.zoomOut")} disabled={zoom <= MIN_ZOOM}>
+                    <MinusIcon />
+                  </Button>
+                  <Button variant="glass" size="icon-sm" onClick={() => setZoomClamped(zoom * 1.4)} aria-label={t("museum.viewer.zoomIn")} disabled={zoom >= MAX_ZOOM}>
+                    <PlusIcon />
+                  </Button>
+                  <Button variant="glass" size="icon-sm" onClick={() => setZoomClamped(1)} aria-label={t("museum.viewer.resetZoom")} disabled={zoom === 1}>
+                    <RotateCcwIcon />
+                  </Button>
+                </>
+              )}
               <DialogPrimitive.Close asChild>
                 <Button variant="glass" size="icon" aria-label={t("museum.viewer.close")} data-testid="viewer-close">
                   <XIcon />
@@ -202,7 +238,7 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
           {sharedBanner}
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 sm:px-20">
-            {sequence.length > 1 && (
+            {sequence.length > 1 && !navigationLocked && (
               <Button
                 variant="glass"
                 size="icon-lg"
@@ -222,8 +258,8 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              onDoubleClick={() => setZoomClamped(zoom > 1 ? 1 : 2.2)}
-              style={{ cursor: zoom > 1 ? "grab" : "zoom-in" }}
+              onDoubleClick={() => !navigationLocked && setZoomClamped(zoom > 1 ? 1 : 2.2)}
+              style={{ cursor: navigationLocked ? "default" : zoom > 1 ? "grab" : "zoom-in" }}
             >
               {status === "loading" && (
                 <div className="absolute inset-0 grid place-items-center" role="status">
@@ -241,6 +277,7 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element -- signed, short-lived URLs; next/image optimisation would re-fetch them
                 <img
+                  ref={imgRef}
                   key={url}
                   src={url}
                   alt={photo.title || t("museum.prompt.untitled")}
@@ -251,12 +288,13 @@ export function PhotoViewer({ photos, sequence, photoId, shared, onNavigate, onC
                     "max-h-full max-w-full object-contain shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] transition-opacity duration-300",
                     status === "ready" ? "opacity-100" : "opacity-0",
                   )}
-                  style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transition: dragging ? "none" : "transform 150ms ease-out, opacity 300ms" }}
+                  style={{ transform, transition: dragging ? "none" : `transform ${following ? 220 : 150}ms ease-out, opacity 300ms` }}
                   data-testid="viewer-image"
                 />
               )}
+              {overlay}
             </div>
-            {sequence.length > 1 && (
+            {sequence.length > 1 && !navigationLocked && (
               <Button
                 variant="glass"
                 size="icon-lg"

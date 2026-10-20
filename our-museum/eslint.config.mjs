@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     ".data/**",
     "playwright-report/**",
     "test-results/**",
+    "dist/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
