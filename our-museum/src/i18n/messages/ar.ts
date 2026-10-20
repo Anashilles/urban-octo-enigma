@@ -450,6 +450,7 @@ const ar: DeepStrings<Messages> = {
     },
     photos: {
       title: "الصور",
+      timeline: "الخط الزمني (حسب التاريخ)",
       all: "كل الصور",
       search: "ابحث في العناوين والتعليقات",
       empty: "لا توجد صور بعد.",

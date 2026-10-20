@@ -446,6 +446,7 @@ const en = {
     },
     photos: {
       title: "Photos",
+      timeline: "Timeline (by date)",
       all: "All photos",
       search: "Search titles and captions",
       empty: "No photos yet.",
