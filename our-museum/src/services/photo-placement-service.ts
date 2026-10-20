@@ -23,6 +23,11 @@ function heightFor(width: number, photo: { width: number; height: number }) {
   return round3(width * (photo.height / photo.width));
 }
 
+/** Someone else changed the frame since the editor loaded it. Details carry the current version. */
+function staleFrame(current: Parameters<typeof frameToResponse>[0]) {
+  return errors.conflict("This frame was just changed by someone else.", { reason: "stale_frame", frame: frameToResponse(current) });
+}
+
 async function validateOnWall(
   tx: Tx,
   museumId: string,
@@ -108,6 +113,7 @@ export async function updateFrame(userId: string, museumId: string, frameId: str
   const frame = await prisma.$transaction(async (tx) => {
     const existing = await tx.photoFrame.findFirst({ where: { id: frameId, museumId }, include: { wall: true, photo: true } });
     if (!existing) throw errors.notFound("Frame not found");
+    if (patch.expectedVersion !== undefined && patch.expectedVersion !== existing.version) throw staleFrame(existing);
     const roomId = patch.roomId ?? existing.roomId;
     const wallKey = (patch.wallKey ?? existing.wall.wallKey) as WallKey;
     const width = patch.width ?? existing.width;
@@ -121,9 +127,11 @@ export async function updateFrame(userId: string, museumId: string, frameId: str
       options: (patch.options ?? existing.frameOptions) as FrameOptions,
     };
     const { wall, overlaps } = await validateOnWall(tx, museumId, roomId, wallKey, candidate, frameId, Boolean(patch.allowOverlap));
-    const updated = await tx.photoFrame.update({
-      where: { id: frameId },
+    // Conditional on the version read above, so two simultaneous edits cannot both win.
+    const written = await tx.photoFrame.updateMany({
+      where: { id: frameId, version: existing.version },
       data: {
+        version: { increment: 1 },
         roomId,
         wallId: wall.id,
         positionU: candidate.u,
@@ -137,9 +145,10 @@ export async function updateFrame(userId: string, museumId: string, frameId: str
         metadata: overlaps.length ? { overlapsIntentionally: overlaps } : {},
       },
     });
+    if (!written.count) throw staleFrame(await tx.photoFrame.findUniqueOrThrow({ where: { id: frameId }, include: { wall: true } }));
     await bumpLayoutVersion(tx, museumId);
     await recordEvent({ museumId, actorId: userId, eventType: "frame.updated", entityId: frameId }, tx);
-    return updated;
+    return tx.photoFrame.findUniqueOrThrow({ where: { id: frameId } });
   });
   notifyMuseumChanged(museumId, "layout", userId);
   return frame;
@@ -169,6 +178,7 @@ export function frameToResponse(f: {
   frameStyle: string;
   frameOptions: unknown;
   caption: string | null;
+  version: number;
 }) {
   return {
     id: f.id,
@@ -183,5 +193,6 @@ export function frameToResponse(f: {
     style: f.frameStyle,
     options: f.frameOptions,
     caption: f.caption,
+    version: f.version,
   };
 }

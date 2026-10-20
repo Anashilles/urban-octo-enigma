@@ -149,7 +149,7 @@ function FrameProperties({ frame, onChange, onRemove }: { frame: SceneFrame; onC
 
 export function WallsTab() {
   const { t, formatNumber } = useI18n();
-  const { scene, museumId, mutate, errorText } = useEditor();
+  const { scene, museumId, mutate, refresh, errorText } = useEditor();
   const sel = useEditorSelection();
   const [allowOverlap, setAllowOverlap] = useState(false);
   const [preview, setPreview] = useState(false);
@@ -162,6 +162,8 @@ export function WallsTab() {
   const photos = useMemo(() => new Map(scene.photos.map((p) => [p.id, p])), [scene.photos]);
   const selectedFrame = scene.frames.find((f) => f.id === sel.frameId) ?? null;
   const patchScene = useMuseumStore((s) => s.patchScene);
+  const saveQueue = useRef(new Map<string, Promise<void>>());
+  const knownVersion = useRef(new Map<string, number>());
 
   useEffect(() => {
     if (!sel.roomId && rooms[0]) sel.set({ roomId: rooms[0].id });
@@ -190,14 +192,28 @@ export function WallsTab() {
           : f,
       ),
     }));
-    try {
-      await mutate(`/api/museums/${museumId}/frames/${frameId}`, {
-        method: "PATCH",
-        body: { ...patch, height: undefined, allowOverlap: allowOverlap || undefined },
-      });
-    } catch (e) {
-      toast.error(errorText(e));
-    }
+    // One save per frame at a time, each based on the newest version we know of
+    // (our own last save or a refreshed scene), so quick successive edits never
+    // collide with each other — only with someone else's change.
+    const previous = saveQueue.current.get(frameId) ?? Promise.resolve();
+    const run = previous.then(async () => {
+      const known = [useMuseumStore.getState().scene?.frames.find((f) => f.id === frameId)?.version, knownVersion.current.get(frameId)];
+      const versions = known.filter((v): v is number => typeof v === "number" && v > 0);
+      const expectedVersion = versions.length ? Math.max(...versions) : undefined;
+      try {
+        const saved = await mutate<{ version: number }>(`/api/museums/${museumId}/frames/${frameId}`, {
+          method: "PATCH",
+          body: { ...patch, height: undefined, allowOverlap: allowOverlap || undefined, expectedVersion },
+        });
+        knownVersion.current.set(frameId, saved.version);
+      } catch (e) {
+        toast.error(errorText(e));
+        // Drop the optimistic change and show what is actually saved.
+        await refresh().catch(() => undefined);
+      }
+    });
+    saveQueue.current.set(frameId, run);
+    await run;
   };
 
   const commitMove = (frameId: string, placement: FramePlacement, check: PlacementCheck) => {

@@ -101,6 +101,7 @@ export function buildDemoScene(templateId: TemplateId, t: Translator, photoCount
           style,
           options: { showPlaque: true },
           caption: null,
+          version: 1,
         };
         placed.push({ ...spot, id: frame.id });
         frames.push(frame);

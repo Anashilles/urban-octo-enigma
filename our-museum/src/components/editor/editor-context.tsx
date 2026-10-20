@@ -30,6 +30,7 @@ export function EditorProvider({ museumId, maxUploadBytes, children }: { museumI
         const problem = (e.details as { problem?: string } | undefined)?.problem;
         if (problem) return t(`editor.walls.problems.${problem}` as "editor.walls.problems.out_of_bounds");
       }
+      if (e instanceof ApiError && e.code === "CONFLICT" && (e.details as { reason?: string } | undefined)?.reason === "stale_frame") return t("editor.walls.staleFrame");
       if (e instanceof ApiError && (e.code === "CONFLICT" || e.code === "VALIDATION_FAILED") && e.message) return e.message;
       return t(errorKey(e));
     },

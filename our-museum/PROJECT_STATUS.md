@@ -66,9 +66,10 @@ Listed plainly so nobody mistakes them for finished:
 5. **Scaling out** — one realtime instance only (rooms are in memory); API and
    realtime rate limiters are per process. See
    [DEPLOYMENT.md](docs/DEPLOYMENT.md#scaling-notes).
-6. **Concurrent editing** — two editors moving the same frame at the same time
-   is last-write-wins; changes propagate live but there is no optimistic
-   locking or merge.
+6. **Concurrent editing** — edits to the same frame are version-checked (a
+   stale edit is refused and the editor reloads), but the editor does not
+   live-update while someone else edits, and two people hanging *different*
+   frames into the same free spot at the same instant can still overlap.
 7. **Real devices** — phones were tested with Playwright's mobile emulation,
    not on physical iOS/Android hardware. GPU performance on low-end phones is
    unknown.

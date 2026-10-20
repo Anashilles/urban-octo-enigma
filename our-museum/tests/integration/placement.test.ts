@@ -79,6 +79,36 @@ describe("frame placement", () => {
     expect((await getScene(owner, museumId)).frames).toHaveLength(0);
   });
 
+  it("refuses edits based on an outdated version and reports the current frame", async () => {
+    const { owner, museumId, room, photo } = await setup();
+    const editor = await createUser("Editor");
+    await addMember(museumId, editor.id, "EDITOR");
+    const frame = await placeFrame(owner.id, museumId, { ...base, photoId: photo.id, roomId: room.id });
+    expect(frame.version).toBe(1);
+    // Both open version 1; the owner saves first.
+    const ownerMove = await updateFrame(owner.id, museumId, frame.id, { u: -0.8, expectedVersion: 1 });
+    expect(ownerMove.version).toBe(2);
+    await expect(updateFrame(editor.id, museumId, frame.id, { u: 0.8, expectedVersion: 1 })).rejects.toMatchObject({
+      code: "CONFLICT",
+      details: { reason: "stale_frame", frame: { id: frame.id, u: -0.8, version: 2 } },
+    });
+    // Having seen version 2, the editor's change goes through.
+    expect(await updateFrame(editor.id, museumId, frame.id, { u: 0.8, expectedVersion: 2 })).toMatchObject({ positionU: 0.8, version: 3 });
+    expect((await getScene(owner, museumId)).frames[0]).toMatchObject({ u: 0.8, version: 3 });
+  });
+
+  it("lets exactly one of two simultaneous edits of the same version win", async () => {
+    const { owner, museumId, room, photo } = await setup();
+    const frame = await placeFrame(owner.id, museumId, { ...base, photoId: photo.id, roomId: room.id });
+    const results = await Promise.allSettled([
+      updateFrame(owner.id, museumId, frame.id, { u: -0.9, expectedVersion: 1 }),
+      updateFrame(owner.id, museumId, frame.id, { u: 0.9, expectedVersion: 1 }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(results.find((r) => r.status === "rejected")).toMatchObject({ reason: { code: "CONFLICT" } });
+    expect((await getScene(owner, museumId)).frames[0]!.version).toBe(2);
+  });
+
   it("does not let visitors or strangers change the layout", async () => {
     const { owner, museumId, room, photo } = await setup();
     const visitor = await createUser("Visitor");

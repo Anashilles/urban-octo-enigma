@@ -61,7 +61,9 @@ export const updateFrameSchema = z
     options: frameOptionsSchema.optional(),
     caption: z.string().trim().max(120).nullable().optional(),
     allowOverlap: z.boolean().optional(),
+    /** The frame version the edit was based on; a newer stored version means someone else changed it. */
+    expectedVersion: z.number().int().positive().optional(),
   })
-  .refine((v) => Object.keys(v).length > 0, "Nothing to update");
+  .refine((v) => Object.keys(v).some((k) => k !== "expectedVersion" && k !== "allowOverlap"), "Nothing to update");
 
 export { ACCEPTED_MIME_TYPES };

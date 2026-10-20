@@ -418,6 +418,8 @@ model PhotoFrame {
   frameOptions Json       @default("{}")
   caption      String?
   metadata     Json       @default("{}")
+  /// Incremented on every edit; clients send the version they edited so stale edits are refused.
+  version      Int        @default(1)
   createdById  String?
   createdBy    User?      @relation("FrameCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt    DateTime   @default(now())

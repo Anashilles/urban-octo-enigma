@@ -52,6 +52,8 @@ export interface SceneFrame {
   style: FrameStyle;
   options: FrameOptions;
   caption: string | null;
+  /** Edit version, sent back with changes so stale edits are refused. */
+  version: number;
 }
 
 export interface SceneCollection {

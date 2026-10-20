@@ -48,3 +48,40 @@ test("an avatar can be customised and saved", async ({ page, context }) => {
   const saved = await page.evaluate(async () => (await fetch("/api/me/avatar")).json());
   expect(saved).toMatchObject({ saved: true, config: { hairStyle: "curly" } });
 });
+
+test("frame edits: quick nudges save in order, and someone else's change is never overwritten", async ({ page, context }) => {
+  await prepare(context);
+  await signUp(page, "Noor");
+  const museumId = await createMuseum(page, "Edits");
+  await uploadAndHang(page, museumId, 1);
+  const serverFrame = () =>
+    page.evaluate(async (id) => (await (await fetch(`/api/museums/${id}/scene`)).json()).frames[0] as { id: string; u: number; v: number; version: number }, museumId);
+  const start = await serverFrame();
+
+  // Six quick arrow presses: each save waits for the previous one, so none collide.
+  await page.getByTestId("wall-elevation").locator("svg").first().focus();
+  for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
+  await expect(page.getByTestId("save-status")).toHaveAttribute("data-state", "saved", { timeout: 30_000 });
+  await expect.poll(async () => (await serverFrame()).u).toBeCloseTo(start.u + 0.3, 3);
+  await expect(page.locator("[data-sonner-toast][data-type=error]")).toHaveCount(0);
+
+  // Another editor moves the frame (this page has not seen it yet)…
+  const current = await serverFrame();
+  const other = await page.evaluate(
+    async ({ id, frame }) =>
+      (await fetch(`/api/museums/${id}/frames/${frame.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ v: frame.v - 0.1, expectedVersion: frame.version }) })).status,
+    { id: museumId, frame: current },
+  );
+  expect(other).toBe(200);
+
+  // …so this page's next nudge is refused instead of silently moving it back.
+  await page.getByTestId("wall-elevation").locator("svg").first().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator("[data-sonner-toast]").filter({ hasText: "Someone else just changed this frame" })).toBeVisible({ timeout: 30_000 });
+  expect(await serverFrame()).toMatchObject({ u: current.u, v: current.v - 0.1 });
+  // The editor reloaded their version; editing continues from it.
+  await page.getByTestId("wall-elevation").locator("svg").first().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(async () => (await serverFrame()).u).toBeCloseTo(current.u + 0.05, 3);
+  expect((await serverFrame()).v).toBeCloseTo(current.v - 0.1, 3);
+});

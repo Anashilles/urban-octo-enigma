@@ -643,6 +643,7 @@ const en = {
       addToWall: "Add to this wall",
       noSpace: "There's no free space on this wall for this photo.",
       moved: "That spot wasn't available, so the frame moved to the nearest free space.",
+      staleFrame: "Someone else just changed this frame. You're now seeing their version.",
       selectFrame: "Select a frame on the wall to adjust it.",
       frame: "Selected frame",
       width: "Width",

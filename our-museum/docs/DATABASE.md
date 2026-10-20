@@ -21,11 +21,11 @@ In Docker, migrations run as the one-off `migrate` service (see
 | Area | Tables | Notes |
 | --- | --- | --- |
 | Auth (Better Auth) | `users`, `sessions`, `accounts`, `verifications`, `rate_limits` | Passwords are hashed by Better Auth (scrypt). Anonymous guest users have `isAnonymous = true`. |
-| Museums | `museums`, `museum_rooms`, `museum_walls` | `theme` and `privacy` are validated JSON. Rooms come from a template; walls hold per-wall overrides. `layoutVersion` increments on room and theme changes. |
+| Museums | `museums`, `museum_rooms`, `museum_walls` | `theme` and `privacy` are validated JSON. Rooms come from a template; walls hold per-wall overrides. `layoutVersion` increments on every layout change (rooms, frames, theme). |
 | Access | `museum_memberships`, `museum_invitations`, `museum_visits` | One membership per (museum, user) with role `OWNER`/`EDITOR`/`VISITOR`. Invitations store only a SHA-256 of the token, plus role, expiry, use limit and revocation. |
 | Photos | `photos`, `pending_uploads`, `storage_deletions` | Photos keep storage keys for the sanitised original and three derivatives. Pending uploads expire; deletions are retried by the cron. |
 | Organising | `photo_collections`, `collection_photos`, `photo_favorites`, `photo_reactions` | Favourites are per user; reactions are unique per (photo, user, emoji). |
-| Hanging | `photo_frames` | Position on a wall (u, v in metres), size, tilt, frame style, mat and plaque options. |
+| Hanging | `photo_frames` | Position on a wall (u, v in metres), size, tilt, frame style, mat and plaque options, edit `version`. |
 | People | `avatar_profiles` | One validated avatar config per user. |
 | Tours | `guided_tours`, `tour_stops` | Ordered stops referencing frames, with notes. |
 | Audit | `museum_events` | Who did what: invitations, membership changes, failed uploads, frame, room, tour and photo changes, deletions. |
@@ -62,9 +62,14 @@ CREATE POLICY "new_table_application_only" ON "new_table" AS RESTRICTIVE FOR ALL
 
 - Invitation redemption locks the invitation row (`SELECT … FOR UPDATE`) so
   use limits hold under concurrent requests.
-- Concurrent edits to the *same* frame are last-write-wins. Every change is
-  broadcast, so other open editors and visitors refetch within moments, but
-  there is no optimistic-locking check yet (see PROJECT_STATUS.md).
+- Frames carry a `version` that increments on every edit. The editor sends
+  the version it edited (`expectedVersion`); the update is conditional on it
+  (`UPDATE … WHERE id = $1 AND version = $2`), so of two simultaneous edits
+  exactly one wins and the other gets `409 CONFLICT` with the current frame.
+  The editor then shows the other person's version. Its own quick successive
+  edits are queued per frame so they never conflict with each other.
+- Two editors placing *different* frames into the same free spot at the same
+  moment is not prevented (each validates against the wall as it was).
 
 ## Backups
 

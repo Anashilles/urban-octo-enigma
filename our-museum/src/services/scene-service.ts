@@ -106,6 +106,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
       style: ((FRAME_STYLES as readonly string[]).includes(f.frameStyle) ? f.frameStyle : "minimal-black") as FrameStyle,
       options: options.success ? options.data : {},
       caption: f.caption,
+      version: f.version,
     };
   });
 
