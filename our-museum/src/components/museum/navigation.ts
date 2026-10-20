@@ -37,14 +37,29 @@ export function standPoint(scene: SceneData, frame: SceneFrame) {
   return { x, z, yaw, pitch, roomId: info.room.id };
 }
 
-/** Moves the visitor in front of a frame, remembering where they were. */
-export function goToFrame(scene: SceneData, frameId: string) {
+/**
+ * Moves the visitor in front of a frame, remembering where they were.
+ * `side` shifts the standing point sideways (metres) so several people
+ * following the same guide don't stand in one spot.
+ */
+export function goToFrame(scene: SceneData, frameId: string, opts: { side?: number; remember?: boolean } = {}) {
   const frame = scene.frames.find((f) => f.id === frameId);
   if (!frame) return false;
   const target = standPoint(scene, frame);
   if (!target) return false;
   const store = useMuseumStore.getState();
-  store.setReturnPose({ x: player.x, z: player.z, yaw: player.yaw, pitch: player.pitch });
+  if (opts.remember !== false) store.setReturnPose({ x: player.x, z: player.z, yaw: player.yaw, pitch: player.pitch });
+  if (opts.side) {
+    // Camera right for this yaw is (cos yaw, -sin yaw).
+    const [x, z] = resolveCircleCollisions(
+      target.x + Math.cos(target.yaw) * opts.side,
+      target.z - Math.sin(target.yaw) * opts.side,
+      PLAYER_RADIUS,
+      collisionBoxes(scene.rooms),
+    );
+    target.x = x;
+    target.z = z;
+  }
   const sameRoom = player.roomId === target.roomId;
   if (!sameRoom) store.flashFade();
   requestMove({ ...target, duration: sameRoom ? 1.1 : 0 });

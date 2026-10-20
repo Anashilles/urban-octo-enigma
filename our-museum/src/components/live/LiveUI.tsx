@@ -305,3 +305,30 @@ export function NameTags({ scene }: { scene: SceneData }) {
     </div>
   );
 }
+
+/** Offer to join a guided tour someone else is leading. */
+export function TourBanner({ scene, actions }: { scene: SceneData; actions: RealtimeActions }) {
+  const t = useT();
+  const tour = useRealtimeStore((s) => s.tour);
+  const selfId = useRealtimeStore((s) => s.selfId);
+  const dismissed = useRealtimeStore((s) => s.dismissedTourId);
+  const local = useMuseumStore((s) => s.tour);
+  const viewerOpen = useMuseumStore((s) => Boolean(s.viewer));
+  if (!tour || tour.leaderId === selfId || dismissed === tour.id || viewerOpen) return null;
+  if (local?.mode === "following" && local.tourId === tour.tourId) return null;
+  const name = scene.tours.find((x) => x.id === tour.tourId)?.name ?? "";
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-32 z-30 flex justify-center px-4" data-hud-panel>
+      <div className="glass-dark pointer-events-auto flex max-w-xl items-center gap-3 rounded-full border border-gold/40 py-1.5 ps-4 pe-1.5 text-sm text-ivory shadow-xl" role="status" data-testid="tour-banner">
+        <UsersRoundIcon className="size-4 shrink-0 text-gold" aria-hidden="true" />
+        <span className="min-w-0 truncate">{t("museum.tours.banner", { name: tour.leaderName, tour: name })}</span>
+        <Button size="sm" variant="gold" className="h-8" onClick={actions.joinTour} data-testid="tour-join">
+          {t("museum.tours.join")}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-8 text-ivory/70 hover:bg-white/10 hover:text-ivory" onClick={() => useRealtimeStore.setState({ dismissedTourId: tour.id })}>
+          {t("museum.live.dismiss")}
+        </Button>
+      </div>
+    </div>
+  );
+}

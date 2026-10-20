@@ -15,6 +15,7 @@ import {
   SettingsIcon,
   PartyPopperIcon,
   UsersRoundIcon,
+  RouteIcon,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Button } from "@/components/ui/button";
@@ -28,11 +29,12 @@ import { AppearanceTab } from "./AppearanceTab";
 import { PeopleTab } from "./PeopleTab";
 import { PhotosTab } from "./PhotosTab";
 import { RoomsTab } from "./RoomsTab";
+import { ToursTab } from "./ToursTab";
 import { SettingsTab } from "./SettingsTab";
 import { WallsTab } from "./WallsTab";
 import { useSaveStatus, useUnsavedGuard } from "./save-status";
 
-export const EDITOR_TABS = ["photos", "walls", "rooms", "appearance", "people", "settings"] as const;
+export const EDITOR_TABS = ["photos", "walls", "rooms", "appearance", "tours", "people", "settings"] as const;
 export type EditorTab = (typeof EDITOR_TABS)[number];
 
 const ICONS: Record<EditorTab, ComponentType<{ className?: string }>> = {
@@ -40,6 +42,7 @@ const ICONS: Record<EditorTab, ComponentType<{ className?: string }>> = {
   walls: LayoutPanelLeftIcon,
   rooms: DoorOpenIcon,
   appearance: PaletteIcon,
+  tours: RouteIcon,
   people: UsersRoundIcon,
   settings: SettingsIcon,
 };
@@ -84,6 +87,7 @@ function EditorBody({ tab, onTab, created }: { tab: EditorTab; onTab: (t: Editor
   const perms = scene.viewer.permissions;
   const visible = EDITOR_TABS.filter((k) => {
     if (k === "rooms") return perms["room.edit"];
+    if (k === "tours") return perms["tour.manage"];
     return true;
   });
 
@@ -148,6 +152,7 @@ function EditorBody({ tab, onTab, created }: { tab: EditorTab; onTab: (t: Editor
           {tab === "walls" && <WallsTab />}
           {tab === "rooms" && <RoomsTab />}
           {tab === "appearance" && <AppearanceTab />}
+          {tab === "tours" && <ToursTab />}
           {tab === "people" && <PeopleTab />}
           {tab === "settings" && <SettingsTab />}
         </main>

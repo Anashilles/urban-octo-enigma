@@ -30,6 +30,8 @@ export interface TicketClaims {
   perms: {
     sharedStart: boolean;
     sharedManage: boolean;
+    /** May lead guided tours for everyone (tour.present). */
+    tour: boolean;
     voice: boolean;
     react: boolean;
   };
@@ -52,6 +54,16 @@ export interface Peer {
   viewing: string | null;
   voice: VoiceState;
   joinedAt: number;
+}
+
+export interface TourState {
+  id: string;
+  tourId: string;
+  leaderId: string;
+  leaderName: string;
+  /** Index of the current stop. */
+  index: number;
+  startedAt: number;
 }
 
 export interface SharedState {
@@ -99,6 +111,9 @@ export const clientMessageSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("shared.end") }),
   z.object({ t: z.literal("shared.join") }),
   z.object({ t: z.literal("shared.leave") }),
+  z.object({ t: z.literal("tour.start"), tourId: id, index: z.number().int().min(0).max(100) }),
+  z.object({ t: z.literal("tour.step"), index: z.number().int().min(0).max(100) }),
+  z.object({ t: z.literal("tour.end") }),
   z.object({ t: z.literal("react"), photoId: id, emoji: z.enum(REACTION_EMOJIS) }),
   z.object({ t: z.literal("voice.state"), on: z.boolean(), muted: z.boolean(), speaking: z.boolean() }),
   z.object({
@@ -125,7 +140,8 @@ export type VoiceSignal = Extract<ClientMessage, { t: "voice.signal" }>["data"];
 export type ChangeScope = "layout" | "photos" | "museum" | "members" | "tours";
 
 export type ServerMessage =
-  | { t: "welcome"; self: Peer; peers: Peer[]; shared: SharedState | null; now: number }
+  | { t: "welcome"; self: Peer; peers: Peer[]; shared: SharedState | null; tour: TourState | null; now: number }
+  | { t: "tour"; state: TourState | null }
   | { t: "peer.join"; peer: Peer }
   | { t: "peer.leave"; id: string }
   | { t: "peer.update"; id: string; patch: Partial<Pick<Peer, "viewing" | "voice">> }
@@ -146,6 +162,7 @@ export type ErrorCode =
   | "rate_limited"
   | "room_full"
   | "shared_busy"
+  | "tour_busy"
   | "not_leader"
   | "unknown_peer";
 

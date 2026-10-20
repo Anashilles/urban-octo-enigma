@@ -8,6 +8,7 @@ import type {
   ServerMessage,
   SharedState,
   TicketClaims,
+  TourState,
 } from "../src/features/realtime/protocol";
 
 /**
@@ -30,6 +31,7 @@ interface Room {
   id: string;
   conns: Map<string, Conn>;
   shared: SharedState | null;
+  tour: TourState | null;
   dirty: Set<string>;
 }
 
@@ -84,7 +86,7 @@ export class Hub {
     if ((this.rooms.get(conn.claims.mid)?.conns.size ?? 0) >= this.opts.maxPerRoom) return "room_full";
     const room = this.room(conn.claims.mid);
     room.conns.set(conn.id, conn);
-    conn.send({ t: "welcome", self: conn.peer, peers: [...room.conns.values()].filter((c) => c !== conn).map((c) => c.peer), shared: room.shared, now: this.now() });
+    conn.send({ t: "welcome", self: conn.peer, peers: [...room.conns.values()].filter((c) => c !== conn).map((c) => c.peer), shared: room.shared, tour: room.tour, now: this.now() });
     const poses = [...room.conns.values()].filter((c) => c !== conn && c.pose).map((c) => c.pose!);
     if (poses.length) conn.send({ t: "poses", list: poses });
     this.broadcast(room, { t: "peer.join", peer: conn.peer }, conn);
@@ -97,6 +99,7 @@ export class Hub {
     room.conns.delete(conn.id);
     room.dirty.delete(conn.id);
     this.broadcast(room, { t: "peer.leave", id: conn.id });
+    if (room.tour?.leaderId === conn.id) this.setTour(room, null);
     if (room.shared) {
       if (room.shared.leaderId === conn.id) this.setShared(room, null);
       else if (room.shared.participants.includes(conn.id)) {
@@ -165,6 +168,18 @@ export class Hub {
         if (room.shared.leaderId === conn.id) return this.setShared(room, null);
         if (!room.shared.participants.includes(conn.id)) return;
         return this.setShared(room, { ...room.shared, participants: room.shared.participants.filter((p) => p !== conn.id) });
+      case "tour.start":
+        if (!conn.claims.perms.tour) return deny("forbidden", "You can't lead tours in this museum.");
+        if (room.tour && room.tour.leaderId !== conn.id && !conn.claims.perms.sharedManage) return deny("tour_busy");
+        return this.setTour(room, { id: randomUUID(), tourId: msg.tourId, leaderId: conn.id, leaderName: conn.claims.name, index: msg.index, startedAt: this.now() });
+      case "tour.step":
+        if (!room.tour || room.tour.leaderId !== conn.id) return deny("not_leader");
+        if (room.tour.index === msg.index) return;
+        return this.setTour(room, { ...room.tour, index: msg.index });
+      case "tour.end":
+        if (!room.tour) return;
+        if (room.tour.leaderId !== conn.id && !conn.claims.perms.sharedManage) return deny("not_leader");
+        return this.setTour(room, null);
       case "react":
         if (!conn.claims.perms.react) return deny("forbidden");
         return this.broadcast(room, { t: "react", id: conn.id, photoId: msg.photoId, emoji: msg.emoji }, conn);
@@ -230,8 +245,13 @@ export class Hub {
 
   private room(id: string): Room {
     let room = this.rooms.get(id);
-    if (!room) this.rooms.set(id, (room = { id, conns: new Map(), shared: null, dirty: new Set() }));
+    if (!room) this.rooms.set(id, (room = { id, conns: new Map(), shared: null, tour: null, dirty: new Set() }));
     return room;
+  }
+
+  private setTour(room: Room, state: TourState | null) {
+    room.tour = state;
+    this.broadcast(room, { t: "tour", state });
   }
 
   private setShared(room: Room, state: SharedState | null) {

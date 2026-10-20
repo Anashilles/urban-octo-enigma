@@ -29,6 +29,7 @@ export async function issueRealtimeTicket(user: { id: string; displayName: strin
       sharedManage: perms["shared.manage"],
       voice: perms["voice.join"] && privacy.voiceChatEnabled,
       react: perms["photo.react"] && privacy.reactionsEnabled,
+      tour: perms["tour.present"],
     },
   };
   const expiresAt = new Date(Date.now() + TICKET_TTL_SECONDS * 1000);

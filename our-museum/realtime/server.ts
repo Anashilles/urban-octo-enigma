@@ -264,6 +264,7 @@ export function startRealtime(config: RealtimeConfig): Promise<RunningRealtime> 
           sharedManage: Boolean(p.perms?.sharedManage),
           voice: Boolean(p.perms?.voice),
           react: Boolean(p.perms?.react),
+          tour: Boolean(p.perms?.tour),
         },
       };
     } catch {

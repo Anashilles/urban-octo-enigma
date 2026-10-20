@@ -16,6 +16,13 @@ export interface ViewerState {
   shared: boolean;
 }
 
+/** The guided tour this visitor is taking: alone, leading everyone, or following a guide. */
+export interface ActiveTour {
+  tourId: string;
+  index: number;
+  mode: "solo" | "leading" | "following";
+}
+
 export interface PlacementState {
   photoId: string;
   /** Size multiplier chosen with the HUD buttons. */
@@ -36,6 +43,7 @@ interface MuseumUiState {
   returnPose: Pick<PlayerPose, "x" | "z" | "yaw" | "pitch"> | null;
   fadeKey: number;
   currentRoomId: string | null;
+  tour: ActiveTour | null;
   setScene: (scene: SceneData) => void;
   patchScene: (fn: (scene: SceneData) => SceneData) => void;
   setFocused: (id: string | null) => void;
@@ -49,6 +57,7 @@ interface MuseumUiState {
   setReturnPose: (pose: MuseumUiState["returnPose"]) => void;
   flashFade: () => void;
   setCurrentRoom: (id: string | null) => void;
+  setTour: (tour: ActiveTour | null) => void;
 }
 
 function syncInput(s: Pick<MuseumUiState, "viewer" | "inputBlockers">) {
@@ -66,6 +75,7 @@ export const useMuseumStore = create<MuseumUiState>()((set, get) => ({
   returnPose: null,
   fadeKey: 0,
   currentRoomId: null,
+  tour: null,
   setScene: (scene) => set({ scene }),
   patchScene: (fn) => {
     const s = get().scene;
@@ -100,6 +110,7 @@ export const useMuseumStore = create<MuseumUiState>()((set, get) => ({
   setGuide: (guideFrameId) => set({ guideFrameId }),
   setReturnPose: (returnPose) => set({ returnPose }),
   flashFade: () => set((s) => ({ fadeKey: s.fadeKey + 1 })),
+  setTour: (tour) => set({ tour }),
   setCurrentRoom: (currentRoomId) => {
     if (get().currentRoomId !== currentRoomId) set({ currentRoomId });
   },

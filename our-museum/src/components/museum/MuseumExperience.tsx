@@ -20,6 +20,7 @@ import { PhotoList } from "./PhotoList";
 import { PhotosPanel } from "./PhotosPanel";
 import { PhotoViewer, type SharedView } from "./PhotoViewer";
 import { SettingsSheet } from "./SettingsSheet";
+import { ToursPanel, TourCard, type TourHooks } from "./ToursUI";
 import { WebGLFallback } from "./WebGLFallback";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -63,6 +64,8 @@ export interface MuseumExperienceProps {
   viewerSyncedView?: SharedView | null;
   onViewerViewChange?: (view: SharedView) => void;
   viewerOverlay?: (photoId: string) => ReactNode;
+  /** Live museums: lead tours for everyone and follow a guide. */
+  tourHooks?: TourHooks;
 }
 
 export function MuseumExperience(props: MuseumExperienceProps) {
@@ -146,6 +149,8 @@ export function MuseumExperience(props: MuseumExperienceProps) {
       {coarse && !viewer && <MobileControls canInteract={Boolean(focusedFrameId)} onInteract={() => focusedFrameId && openFrame(focusedFrameId)} />}
 
       <GuideBanner scene={scene} />
+      <TourCard scene={scene} hooks={props.tourHooks ?? {}} onView={openFrame} />
+      <ToursPanel scene={scene} hooks={props.tourHooks ?? {}} />
 
       {props.overlays}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Peer, SharedState } from "@/features/realtime/protocol";
+import type { Peer, SharedState, TourState } from "@/features/realtime/protocol";
 
 export type RealtimeStatus = "idle" | "connecting" | "online" | "reconnecting" | "unavailable";
 
@@ -21,6 +21,9 @@ interface RealtimeState {
   following: boolean;
   /** A shared session the visitor chose not to join (no auto-join, banner hidden). */
   dismissedSharedId: string | null;
+  /** A guided tour someone is leading for everyone. */
+  tour: TourState | null;
+  dismissedTourId: string | null;
   reactions: FloatingReaction[];
   reset: () => void;
 }
@@ -32,6 +35,8 @@ const initial = {
   shared: null,
   following: false,
   dismissedSharedId: null,
+  tour: null,
+  dismissedTourId: null,
   reactions: [],
 };
 

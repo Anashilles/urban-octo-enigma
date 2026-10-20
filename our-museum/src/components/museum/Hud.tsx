@@ -8,6 +8,7 @@ import {
   ImagesIcon,
   MaximizeIcon,
   MinimizeIcon,
+  RouteIcon,
   SettingsIcon,
   Undo2Icon,
 } from "lucide-react";
@@ -148,6 +149,11 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
             <ImagesIcon />
           </HudIconButton>
           {toolbar}
+          {scene.tours.length > 0 && (
+            <HudIconButton label={t("museum.tours.title")} onClick={() => togglePanel("tours")} active={panel === "tours"} testId="hud-tours">
+              <RouteIcon />
+            </HudIconButton>
+          )}
           <HudIconButton label={t("museum.hud.settings")} onClick={() => togglePanel("settings")} active={panel === "settings"} testId="hud-settings">
             <SettingsIcon />
           </HudIconButton>

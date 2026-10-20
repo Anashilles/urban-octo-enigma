@@ -126,7 +126,7 @@ export class RealtimeClient {
       if (this.poseTimer) clearInterval(this.poseTimer);
       this.poseTimer = null;
       clearPoses();
-      useRealtimeStore.setState({ peers: {}, shared: null, following: false, selfId: null });
+      useRealtimeStore.setState({ peers: {}, shared: null, following: false, selfId: null, tour: null });
       if (this.stopped) return;
       if (ev.code === CLOSE.kicked) return; // handled by the "kicked" message
       if (ev.code === CLOSE.roomFull) return this.scheduleReconnect(30_000);
@@ -140,7 +140,7 @@ export class RealtimeClient {
       case "welcome": {
         this.attempt = 0;
         const peers = Object.fromEntries(msg.peers.map((p) => [p.id, p]));
-        store.setState({ status: "online", selfId: msg.self.id, peers, shared: msg.shared, following: false });
+        store.setState({ status: "online", selfId: msg.self.id, peers, shared: msg.shared, following: false, tour: msg.tour });
         this.startPoseLoop();
         return;
       }
@@ -170,6 +170,9 @@ export class RealtimeClient {
         return;
       case "shared":
         store.setState((s) => ({ shared: msg.state, following: msg.state ? s.following && s.shared?.id === msg.state.id : false }));
+        return;
+      case "tour":
+        store.setState({ tour: msg.state });
         return;
       case "react":
         pushReaction({ photoId: msg.photoId, emoji: msg.emoji, from: msg.id });

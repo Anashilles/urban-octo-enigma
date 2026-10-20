@@ -21,7 +21,7 @@ import { useRealtimeStore } from "@/store/realtime-store";
 import { useVoiceStore } from "@/store/voice-store";
 import { RemoteAvatars } from "@/three/avatars/RemoteAvatars";
 import { PlacementTool, type PlacementConfirm } from "@/three/scenes/PlacementTool";
-import { FloatingReactions, NameTags, PeopleSheet, PresenceButton, SharedBanner, ViewerLiveActions, ViewerSharedBar } from "./LiveUI";
+import { FloatingReactions, NameTags, PeopleSheet, TourBanner, PresenceButton, SharedBanner, ViewerLiveActions, ViewerSharedBar } from "./LiveUI";
 import { useRealtime } from "./use-realtime";
 import { useVoice } from "./use-voice";
 import { VoiceButton, VoiceSection } from "./VoiceUI";
@@ -45,6 +45,8 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
   const selfId = useRealtimeStore((s) => s.selfId);
   const autoFollow = usePreferences((s) => s.autoFollowShared);
   const setPrefs = usePreferences((s) => s.set);
+  const liveTour = useRealtimeStore((s) => s.tour);
+  const online = useRealtimeStore((s) => s.status === "online");
   const isFollower = Boolean(shared && following && shared.leaderId !== selfId);
   const isLeader = Boolean(shared && following && shared.leaderId === selfId);
 
@@ -65,6 +67,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
         const v = useVoiceStore.getState();
         return { status: v.status, muted: v.muted, listenOnly: v.listenOnly, speaking: v.speaking, error: v.error, connected: v.connected };
       },
+      tour: () => ({ local: useMuseumStore.getState().tour, live: useRealtimeStore.getState().tour }),
       peers: () => Object.values(useRealtimeStore.getState().peers).map((p) => ({ name: p.name, voice: p.voice, viewing: p.viewing })),
     };
   }, []);
@@ -170,6 +173,13 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
       onViewerNavigate={realtime.onViewerNavigate}
       onViewerClose={realtime.onViewerClose}
       viewerOverlay={(photoId) => <FloatingReactions photoId={photoId} />}
+      tourHooks={{
+        onLead: realtime.leadTour,
+        canLead: perms["tour.present"] && online,
+        onStep: realtime.stepTour,
+        onEnd: realtime.endTour,
+        guideName: liveTour?.leaderName ?? null,
+      }}
       settingsExtra={
         <>
           <div className="flex items-start justify-between gap-4">
@@ -205,6 +215,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
           {canEdit && <PlacementBar scene={scene} busy={hanging} />}
           <NameTags scene={scene} />
           <SharedBanner scene={scene} actions={realtime} />
+          <TourBanner scene={scene} actions={realtime} />
           <PeopleSheet scene={scene} actions={realtime} voiceSection={<VoiceSection voice={voice} enabled={voiceAllowed} />} />
           {scene.frames.length === 0 && canEdit && !placing && (
             <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4">

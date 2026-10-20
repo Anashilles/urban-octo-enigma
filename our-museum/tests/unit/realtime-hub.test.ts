@@ -4,7 +4,7 @@ import { clientMessageSchema, type ServerMessage, type TicketClaims } from "@/fe
 import { Hub } from "../../realtime/hub";
 
 type Perms = TicketClaims["perms"];
-const ALL: Perms = { sharedStart: true, sharedManage: false, voice: true, react: true };
+const ALL: Perms = { sharedStart: true, sharedManage: false, voice: true, react: true, tour: true };
 
 function client(hub: Hub, user: string, opts: { museum?: string; role?: TicketClaims["role"]; perms?: Partial<Perms> } = {}) {
   const inbox: ServerMessage[] = [];
@@ -136,6 +136,26 @@ describe("realtime hub", () => {
     a.send({ t: "shared.start", photoId: "p1", sequence: [] });
     hub.leave(a.conn);
     expect(b.of("shared").at(-1)).toEqual({ t: "shared", state: null });
+  });
+
+  it("lets one guide lead a tour that late joiners see", () => {
+    const hub = newHub();
+    const guide = client(hub, "guide");
+    const walker = client(hub, "walker");
+    const noTours = client(hub, "vic", { perms: { tour: false } });
+    noTours.send({ t: "tour.start", tourId: "tour1", index: 0 });
+    expect(noTours.of("error")[0]?.code).toBe("forbidden");
+    guide.send({ t: "tour.start", tourId: "tour1", index: 0 });
+    expect(walker.of("tour")[0]?.state).toMatchObject({ tourId: "tour1", index: 0, leaderId: guide.conn.id, leaderName: "guide" });
+    walker.send({ t: "tour.step", index: 1 });
+    expect(walker.of("error").at(-1)?.code).toBe("not_leader");
+    walker.send({ t: "tour.start", tourId: "tour2", index: 0 });
+    expect(walker.of("error").at(-1)?.code).toBe("tour_busy");
+    guide.send({ t: "tour.step", index: 2 });
+    const late = client(hub, "late");
+    expect(late.of("welcome")[0]?.tour).toMatchObject({ tourId: "tour1", index: 2 });
+    hub.leave(guide.conn);
+    expect(late.of("tour").at(-1)).toEqual({ t: "tour", state: null });
   });
 
   it("relays voice signals only between people with voice on", () => {

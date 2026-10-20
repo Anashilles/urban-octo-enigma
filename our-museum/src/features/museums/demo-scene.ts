@@ -134,7 +134,18 @@ export function buildDemoScene(templateId: TemplateId, t: Translator, photoCount
       sortOrder: i,
       photoIds: photos.filter((_, j) => j % 3 === i).map((p) => p.id),
     })),
-    tours: [],
+    tours: frames.length
+      ? [
+          {
+            id: "demo-tour",
+            name: t("demo.tourName"),
+            description: t("demo.tourDescription"),
+            stops: (["a", "b", "c", "d"] as const)
+              .map((k, i) => ({ id: `demo-stop-${k}`, frameId: frames[Math.min(frames.length - 1, i * 2)]!.id, note: t(`demo.tourNotes.${k}`) }))
+              .filter((s, i, all) => all.findIndex((x) => x.frameId === s.frameId) === i),
+          },
+        ]
+      : [],
     viewer: { userId: null, displayName: "", role: null, isGuest: true, permissions, avatar: defaultAvatar("demo-visitor") },
     spawn: template.spawn,
     isDemo: true,

@@ -13,6 +13,7 @@ import { useMuseumStore } from "@/store/museum-store";
 import { usePreferences } from "@/store/preferences";
 import { pushReaction, useRealtimeStore } from "@/store/realtime-store";
 import { emitLocalGesture, onLocalGesture, requestMove } from "@/three/runtime";
+import { followerSide, goToTourStop } from "@/components/museum/tour";
 
 export interface RealtimeActions {
   send: (msg: ClientMessage) => void;
@@ -28,6 +29,17 @@ export interface RealtimeActions {
   react: (photoId: string, emoji: ReactionEmoji) => void;
   wave: () => void;
   goToPeer: (peerId: string) => void;
+  leadTour: (tourId: string) => void;
+  stepTour: (index: number) => void;
+  endTour: (mode: "solo" | "leading" | "following") => void;
+  joinTour: () => void;
+}
+
+function followTour(index: number, tourId: string) {
+  const scene = useMuseumStore.getState().scene;
+  const selfId = useRealtimeStore.getState().selfId ?? "self";
+  if (!scene) return false;
+  return goToTourStop(scene, { tourId, index, mode: "following" }, { side: followerSide(selfId) });
 }
 
 function openSharedViewer(state: SharedState) {
@@ -82,6 +94,7 @@ export function useRealtime(
       onPeerLeave: (id) => voice?.current?.peerLeft(id),
       onError: (code) => {
         if (code === "shared_busy") toast(tRef.current("museum.live.sharedBusy"));
+        if (code === "tour_busy") toast(tRef.current("museum.tours.busy"));
       },
     });
     clientRef.current = client;
@@ -140,6 +153,37 @@ export function useRealtime(
           }
           // The leader keeps looking, now privately.
           if (museum.viewer?.shared) useMuseumStore.setState({ viewer: { ...museum.viewer, shared: false } });
+        }
+      }),
+    [],
+  );
+
+  // Guided tours led by someone else: follow along (or offer to).
+  useEffect(
+    () =>
+      useRealtimeStore.subscribe((s, prev) => {
+        const next = s.tour;
+        const before = prev.tour;
+        if (next === before) return;
+        const local = useMuseumStore.getState().tour;
+        if (next && next.leaderId !== s.selfId) {
+          const isNew = next.id !== before?.id;
+          const followingThis = local?.mode === "following" && local.tourId === next.tourId;
+          if (isNew) {
+            const museum = useMuseumStore.getState();
+            const busy = Boolean(museum.viewer) || museum.inputBlockers > 0 || Boolean(museum.placement) || (local && local.mode !== "following");
+            if (usePreferences.getState().autoFollowShared && !busy && s.dismissedTourId !== next.id) {
+              // The tour may be newer than our copy of the museum.
+              if (!followTour(next.index, next.tourId)) void Promise.resolve(refreshRef.current()).then(() => followTour(next.index, next.tourId));
+            }
+          } else if (followingThis && next.index !== before?.index) {
+            followTour(next.index, next.tourId);
+          }
+          return;
+        }
+        if (!next && before && before.leaderId !== prev.selfId && local?.mode === "following") {
+          useMuseumStore.getState().setTour(null);
+          toast(tRef.current("museum.tours.ended"));
         }
       }),
     [],
@@ -208,6 +252,27 @@ export function useRealtime(
       },
       // The local avatar plays it and the gesture subscription forwards it to others.
       wave: () => emitLocalGesture("wave"),
+      leadTour: (tourId) => {
+        const scene = useMuseumStore.getState().scene;
+        if (!scene) return;
+        goToTourStop(scene, { tourId, index: 0, mode: "leading" });
+        send({ t: "tour.start", tourId, index: 0 });
+      },
+      stepTour: (index) => send({ t: "tour.step", index }),
+      endTour: (mode) => {
+        const s = useRealtimeStore.getState();
+        if (mode === "leading") send({ t: "tour.end" });
+        if (mode === "following" && s.tour) useRealtimeStore.setState({ dismissedTourId: s.tour.id });
+      },
+      joinTour: () => {
+        const s = useRealtimeStore.getState();
+        if (!s.tour) return;
+        useRealtimeStore.setState({ dismissedTourId: null });
+        if (!followTour(s.tour.index, s.tour.tourId)) {
+          const tour = s.tour;
+          void Promise.resolve(refreshRef.current()).then(() => followTour(tour.index, tour.tourId));
+        }
+      },
       goToPeer: (peerId) => {
         const p = latestPose(peerId);
         if (!p) return;
