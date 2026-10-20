@@ -11,13 +11,15 @@ export async function resetDatabase() {
   await rm("./.data/test-storage", { recursive: true, force: true });
 }
 
-export async function createUser(name = "User") {
+export async function createUser(name = "User", opts: { emailVerified?: boolean; isAnonymous?: boolean; email?: string } = {}) {
   seq++;
   const id = `user_${Date.now().toString(36)}_${seq}`;
+  const emailVerified = opts.emailVerified ?? !opts.isAnonymous;
+  const isAnonymous = opts.isAnonymous ?? false;
   const user = await prisma.user.create({
-    data: { id, displayName: `${name} ${seq}`, email: `${id}@example.com`, emailVerified: true },
+    data: { id, displayName: `${name} ${seq}`, email: opts.email ?? `${id}@example.com`, emailVerified, isAnonymous },
   });
-  return { id: user.id, displayName: user.displayName, email: user.email, isAnonymous: false, emailVerified: true };
+  return { id: user.id, displayName: user.displayName, email: user.email, isAnonymous, emailVerified };
 }
 
 export async function addMember(museumId: string, userId: string, role: "EDITOR" | "VISITOR") {

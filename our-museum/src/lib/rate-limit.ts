@@ -75,6 +75,7 @@ export const RATE_RULES = {
   realtimeTicket: { capacity: 20, refillPerSecond: 0.5 },
   email: { capacity: 5, refillPerSecond: 1 / 60 },
 } satisfies Record<string, RateLimitRule>;
+export type RuleName = keyof typeof RATE_RULES;
 
 const g = globalThis as unknown as { __ourMuseumLimiter?: TokenBucketLimiter };
 export const apiLimiter: TokenBucketLimiter = g.__ourMuseumLimiter ?? new TokenBucketLimiter();

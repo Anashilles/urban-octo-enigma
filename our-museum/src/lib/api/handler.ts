@@ -4,9 +4,8 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import { AppError, errors, isAppError } from "@/lib/errors";
 import { logger, reportError } from "@/lib/logger";
-import { apiLimiter, RATE_RULES } from "@/lib/rate-limit";
+import { apiLimiter, RATE_RULES, type RuleName } from "@/lib/rate-limit";
 
-type RuleName = keyof typeof RATE_RULES;
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export function clientIp(req: Request): string {

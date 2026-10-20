@@ -14,6 +14,7 @@ import {
   PaletteIcon,
   SettingsIcon,
   PartyPopperIcon,
+  UsersRoundIcon,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Button } from "@/components/ui/button";
@@ -24,13 +25,14 @@ import { useMuseumStore } from "@/store/museum-store";
 import { useUploadQueue } from "@/features/photos/upload-queue";
 import { EditorProvider, useEditor } from "./editor-context";
 import { AppearanceTab } from "./AppearanceTab";
+import { PeopleTab } from "./PeopleTab";
 import { PhotosTab } from "./PhotosTab";
 import { RoomsTab } from "./RoomsTab";
 import { SettingsTab } from "./SettingsTab";
 import { WallsTab } from "./WallsTab";
 import { useSaveStatus, useUnsavedGuard } from "./save-status";
 
-export const EDITOR_TABS = ["photos", "walls", "rooms", "appearance", "settings"] as const;
+export const EDITOR_TABS = ["photos", "walls", "rooms", "appearance", "people", "settings"] as const;
 export type EditorTab = (typeof EDITOR_TABS)[number];
 
 const ICONS: Record<EditorTab, ComponentType<{ className?: string }>> = {
@@ -38,6 +40,7 @@ const ICONS: Record<EditorTab, ComponentType<{ className?: string }>> = {
   walls: LayoutPanelLeftIcon,
   rooms: DoorOpenIcon,
   appearance: PaletteIcon,
+  people: UsersRoundIcon,
   settings: SettingsIcon,
 };
 
@@ -145,6 +148,7 @@ function EditorBody({ tab, onTab, created }: { tab: EditorTab; onTab: (t: Editor
           {tab === "walls" && <WallsTab />}
           {tab === "rooms" && <RoomsTab />}
           {tab === "appearance" && <AppearanceTab />}
+          {tab === "people" && <PeopleTab />}
           {tab === "settings" && <SettingsTab />}
         </main>
       </div>

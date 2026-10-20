@@ -4,15 +4,17 @@ import { redirect } from "next/navigation";
 import { SignInForm } from "@/features/authentication/auth-forms";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getT } from "@/i18n/server";
+import { safeNext } from "@/features/authentication/schemas";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getT();
   return { title: t("common.signIn") };
 }
 
-export default async function LoginPage() {
+export default async function LoginPage(props: PageProps<"/login">) {
   const [{ t }, user] = await Promise.all([getT(), getCurrentUser()]);
-  if (user && !user.isAnonymous) redirect("/dashboard");
+  const next = (await props.searchParams).next;
+  if (user && !user.isAnonymous) redirect(safeNext(typeof next === "string" ? next : null));
   return (
     <div className="grid gap-8">
       <div className="grid gap-2">

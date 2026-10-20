@@ -153,6 +153,7 @@ export async function getDashboard(user: { id: string; email: string; isAnonymou
       .filter((i) => i.uses < i.maxUses)
       .map((i) => ({
         id: i.id,
+        museumId: i.museumId,
         museumName: i.museum.name,
         ownerName: i.museum.owner.displayName,
         role: i.role,

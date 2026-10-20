@@ -1,3 +1,4 @@
+import { AcceptInvitationButton } from "@/components/invitations/accept-invitation-button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2Icon, MailIcon, PlusIcon, UserRoundIcon } from "lucide-react";
@@ -98,6 +99,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
                     {t("dashboard.expires", { time: dateFmt.format(new Date(i.expiresAt)) })}
                   </p>
                 </div>
+                <AcceptInvitationButton invitationId={i.id} museumId={i.museumId} />
               </li>
             ))}
           </ul>
