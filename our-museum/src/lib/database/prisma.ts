@@ -11,7 +11,9 @@ import { PrismaClient } from "@/generated/prisma/client";
 const globalForPrisma = globalThis as unknown as { __ourMuseumPrisma?: PrismaClient };
 
 function createClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL;
+  // `next build` only imports modules (nothing connects), so it needs no real URL.
+  const building = process.env.NEXT_PHASE === "phase-production-build";
+  const connectionString = process.env.DATABASE_URL || (building ? "postgresql://build-placeholder:5432/unused" : undefined);
   if (!connectionString) throw new Error("DATABASE_URL is not set");
   const adapter = new PrismaPg({
     connectionString,

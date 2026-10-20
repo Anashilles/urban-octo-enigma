@@ -22,6 +22,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Docker images use the self-contained server (`NEXT_OUTPUT=standalone`).
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   reactStrictMode: true,
   poweredByHeader: false,
   // Native / wasm-heavy server packages must not be bundled.

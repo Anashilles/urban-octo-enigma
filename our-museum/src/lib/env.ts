@@ -61,9 +61,22 @@ export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 let cached: ServerEnv | null = null;
 
+/**
+ * `next build` imports server modules to collect route information. Every
+ * route is rendered on demand, so the build needs no real secrets: missing
+ * required values get inert placeholders there (and only there), which keeps
+ * secrets out of build environments and container images.
+ */
+const BUILD_PLACEHOLDERS = {
+  DATABASE_URL: "postgresql://build-placeholder:5432/unused",
+  BETTER_AUTH_SECRET: "build-placeholder-never-used-at-runtime-0000",
+};
+
 export function env(): ServerEnv {
   if (cached) return cached;
-  const parsed = serverEnvSchema.safeParse(process.env);
+  const building = process.env.NEXT_PHASE === "phase-production-build";
+  const source = building ? { ...BUILD_PLACEHOLDERS, ...Object.fromEntries(Object.entries(process.env).filter(([, v]) => v)) } : process.env;
+  const parsed = serverEnvSchema.safeParse(source);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid server environment configuration:\n${issues}`);
