@@ -15,7 +15,8 @@ export class LocalStorageDriver implements StorageDriver {
   private readonly root: string;
 
   constructor(dir: string) {
-    this.root = path.resolve(process.cwd(), dir);
+    // Runtime-configured directory: keep it out of build-time file tracing.
+    this.root = path.resolve(/*turbopackIgnore: true*/ process.cwd(), dir);
   }
 
   resolve(key: string): string {

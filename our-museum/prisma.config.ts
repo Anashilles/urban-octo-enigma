@@ -5,7 +5,8 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "tsx prisma/seed.ts",
+    // react-server resolves "server-only" to its no-op build outside Next.js.
+    seed: "tsx --conditions=react-server prisma/seed.ts",
   },
   datasource: {
     url: env("DATABASE_URL"),
