@@ -93,3 +93,14 @@ export function permissionsFor(role: Role, ctx: PermissionContext = {}): Record<
 export function canEditLayout(role: Role | null | undefined) {
   return can(role, "frame.place");
 }
+
+/**
+ * Site administrators: listed in ADMIN_EMAILS *and* holding a verified,
+ * non-guest account — otherwise anyone could register an admin address that
+ * has not signed up yet while email verification is optional.
+ */
+export function isSiteAdmin(user: { email: string; emailVerified: boolean; isAnonymous: boolean }, adminEmails: readonly string[]): boolean {
+  if (!user.emailVerified || user.isAnonymous) return false;
+  const email = user.email.toLowerCase();
+  return adminEmails.some((a) => a.toLowerCase() === email);
+}

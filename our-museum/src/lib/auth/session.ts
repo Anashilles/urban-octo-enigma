@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { isLocale, type Locale } from "@/i18n/config";
 import { env } from "@/lib/env";
+import { isSiteAdmin } from "@/lib/permissions";
 import { errors } from "@/lib/errors";
 import { auth } from "./server";
 
@@ -18,15 +19,13 @@ export interface SessionUser {
 }
 
 function toSessionUser(user: Record<string, unknown>): SessionUser {
-  const email = String(user.email ?? "");
+  const account = { email: String(user.email ?? ""), emailVerified: Boolean(user.emailVerified), isAnonymous: Boolean(user.isAnonymous) };
   return {
     id: String(user.id),
     displayName: String(user.name ?? user.displayName ?? ""),
-    email,
-    emailVerified: Boolean(user.emailVerified),
-    isAnonymous: Boolean(user.isAnonymous),
+    ...account,
     locale: isLocale(user.locale) ? user.locale : "en",
-    isAdmin: !user.isAnonymous && env().ADMIN_EMAILS.map((a) => a.toLowerCase()).includes(email.toLowerCase()),
+    isAdmin: isSiteAdmin(account, env().ADMIN_EMAILS),
   };
 }
 

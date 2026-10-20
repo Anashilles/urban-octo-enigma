@@ -1,0 +1,7 @@
+# Museums, invitations and accounts are private and never indexed.
+User-agent: *
+Allow: /$
+Allow: /demo
+Allow: /privacy
+Allow: /terms
+Disallow: /

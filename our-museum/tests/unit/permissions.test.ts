@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { can } from "@/lib/permissions";
+import { can, isSiteAdmin } from "@/lib/permissions";
 
 describe("permissions", () => {
   it("gives the owner full control", () => {
@@ -35,3 +35,15 @@ describe("permissions", () => {
     expect(can(null, "museum.view")).toBe(false);
   });
 });
+
+describe("site admins", () => {
+  const admins = ["Admin@Example.com"];
+  it("requires a listed, verified, non-guest account", () => {
+    expect(isSiteAdmin({ email: "admin@example.com", emailVerified: true, isAnonymous: false }, admins)).toBe(true);
+    expect(isSiteAdmin({ email: "admin@example.com", emailVerified: false, isAnonymous: false }, admins)).toBe(false);
+    expect(isSiteAdmin({ email: "admin@example.com", emailVerified: true, isAnonymous: true }, admins)).toBe(false);
+    expect(isSiteAdmin({ email: "someone@example.com", emailVerified: true, isAnonymous: false }, admins)).toBe(false);
+    expect(isSiteAdmin({ email: "admin@example.com", emailVerified: true, isAnonymous: false }, [])).toBe(false);
+  });
+});
+

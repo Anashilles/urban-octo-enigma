@@ -41,7 +41,9 @@ test("an avatar can be customised and saved", async ({ page, context }) => {
   await expect(page.getByTestId("avatar-stage")).toBeVisible({ timeout: 60_000 });
   await page.getByTestId("avatar-tab-hair").click();
   await page.getByTestId("avatar-hairStyle-curly").click();
+  const put = page.waitForResponse((r) => r.url().endsWith("/api/me/avatar") && r.request().method() === "PUT");
   await page.getByTestId("avatar-save").click();
+  expect((await put).ok()).toBe(true);
   await expect(page.getByTestId("avatar-save")).toBeDisabled();
   const saved = await page.evaluate(async () => (await fetch("/api/me/avatar")).json());
   expect(saved).toMatchObject({ saved: true, config: { hairStyle: "curly" } });

@@ -51,7 +51,29 @@ export async function waitForMuseum(page: Page) {
 }
 
 export function player(page: Page) {
-  return page.evaluate(() => (window as unknown as { __museum: { player: () => { x: number; z: number; yaw: number } } }).__museum.player());
+  return page.evaluate(() => (window as unknown as { __museum: { player: () => { x: number; z: number; yaw: number; moving: boolean } } }).__museum.player());
+}
+
+/**
+ * Resolves once the visitor has stopped moving: any glide (Go to photo, tours)
+ * has finished and the position is stable. With software WebGL a single frame
+ * can take hundreds of milliseconds, so a glide may still be finishing after
+ * the photo viewer has appeared.
+ */
+export async function playerAtRest(page: Page) {
+  let last = await player(page);
+  await expect
+    .poll(
+      async () => {
+        const p = await player(page);
+        const moved = Math.hypot(p.x - last.x, p.z - last.z);
+        last = p;
+        return p.moving ? 1 : moved;
+      },
+      { timeout: 20_000, intervals: [250] },
+    )
+    .toBeLessThan(0.001);
+  return last;
 }
 
 async function testJpeg(hue: number) {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { player, prepare, waitForMuseum } from "./helpers";
+import { player, playerAtRest, prepare, waitForMuseum } from "./helpers";
 
 test.beforeEach(async ({ context }) => {
   await prepare(context);
@@ -41,7 +41,7 @@ test("demo museum: walk with the keyboard, open a photograph and close it", asyn
   await expect(viewer).toBeVisible();
 
   // Movement keys don't move the visitor while the viewer is open; arrows browse instead.
-  const before = await player(page);
+  const before = await playerAtRest(page);
   const title = await page.getByTestId("viewer-title").textContent();
   await page.keyboard.down("KeyW");
   await page.waitForTimeout(700);
