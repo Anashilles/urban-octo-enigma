@@ -78,6 +78,8 @@ interface HandlerOptions {
   rate?: RuleName;
   /** Skip the same-origin check (only for endpoints authenticated by other means, e.g. signed URLs, cron secrets). */
   skipCsrf?: boolean;
+  /** Skip the generic per-IP limits (signed asset reads, which a page requests in bulk). */
+  skipIpLimit?: boolean;
 }
 
 type RouteContext<P> = { params: Promise<P> };
@@ -95,10 +97,10 @@ export function apiHandler<P = Record<string, string>>(
     const started = Date.now();
     try {
       const ip = clientIp(req);
-      limit(ip, "api");
+      if (!options.skipIpLimit) limit(ip, "api");
       if (MUTATING.has(req.method)) {
         if (!options.skipCsrf) assertSameOrigin(req);
-        limit(ip, "mutation");
+        if (!options.skipIpLimit) limit(ip, "mutation");
       }
       if (options.rate) limit(ip, options.rate);
       const params = ctx?.params ? await ctx.params : ({} as P);

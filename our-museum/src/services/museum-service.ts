@@ -168,7 +168,8 @@ export async function updateMuseum(userId: string, museumId: string, patch: z.in
     const photo = await prisma.photo.findFirst({ where: { id: patch.coverPhotoId, museumId }, select: { id: true } });
     if (!photo) throw errors.validation("Cover photo must belong to this museum");
   }
-  const theme = patch.theme ? themeOverridesSchema.parse({ ...(access.museum.theme as object), ...patch.theme }) : undefined;
+  // The client sends the complete set of overrides, so `{}` resets to the template.
+  const theme = patch.theme ? themeOverridesSchema.parse(patch.theme) : undefined;
   const privacy = patch.privacy ? privacySchema.parse({ ...resolvePrivacy(access.museum.privacy), ...patch.privacy }) : undefined;
   const updated = await prisma.$transaction(async (tx) => {
     const m = await tx.museum.update({
@@ -233,4 +234,27 @@ export async function recordVisit(userId: string, museumId: string) {
     create: { userId, museumId },
     update: { lastVisitedAt: new Date(), visitCount: { increment: 1 } },
   });
+}
+
+/** Progress of the first-time checklist, derived from real data. */
+export async function getOnboardingState(userId: string) {
+  const [owned, avatar, othersVisited] = await Promise.all([
+    prisma.museum.findMany({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, _count: { select: { photos: true, frames: true, invitations: true, memberships: true } } },
+    }),
+    prisma.avatarProfile.count({ where: { userId } }),
+    prisma.museumVisit.count({ where: { museum: { ownerId: userId }, userId: { not: userId } } }),
+  ]);
+  const first = owned[0]?.id;
+  const editor = (tab: string) => (first ? `/editor/${first}?tab=${tab}` : "/museums/new");
+  return [
+    { key: "museum" as const, done: owned.length > 0, href: "/museums/new" },
+    { key: "upload" as const, done: owned.some((m) => m._count.photos > 0), href: editor("photos") },
+    { key: "hang" as const, done: owned.some((m) => m._count.frames > 0), href: editor("walls") },
+    { key: "avatar" as const, done: avatar > 0, href: "/avatar" },
+    { key: "invite" as const, done: owned.some((m) => m._count.invitations > 0 || m._count.memberships > 1), href: editor("people") },
+    { key: "explore" as const, done: othersVisited > 0, href: first ? `/museum/${first}` : "/museums/new" },
+  ];
 }

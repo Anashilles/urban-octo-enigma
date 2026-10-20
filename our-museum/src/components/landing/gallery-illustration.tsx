@@ -29,8 +29,10 @@ function SideFrame({
   f1,
   f2,
   art,
+  prefix,
   frame = "#2b2420",
 }: {
+  prefix: string;
   side: "left" | "right";
   s1: number;
   s2: number;
@@ -46,12 +48,49 @@ function SideFrame({
       <polygon points={quad(side, s1 - 0.004, s2 + 0.004, f1 - 0.012, f2 + 0.014)} fill="rgba(36,35,33,0.16)" />
       <polygon points={quad(side, s1, s2, f1, f2)} fill={frame} />
       <polygon points={quad(side, s1 + ds * 0.35, s2 - ds * 0.35, f1 + df * 0.35, f2 - df * 0.35)} fill="#f7f3ea" />
-      <polygon points={quad(side, s1 + ds, s2 - ds, f1 + df, f2 - df)} fill={`url(#${art})`} />
+      <polygon points={quad(side, s1 + ds, s2 - ds, f1 + df, f2 - df)} fill={`url(#${prefix}${art})`} />
     </g>
   );
 }
 
-export function GalleryIllustration({ className, animated = true }: { className?: string; animated?: boolean }) {
+export interface IllustrationPalette {
+  back: [string, string];
+  left: [string, string];
+  right: [string, string];
+  ceiling: [string, string];
+  floor: [string, string];
+  frame: string;
+  accentFrame: string;
+  trim: string;
+  plank: string;
+}
+
+export const DEFAULT_PALETTE: IllustrationPalette = {
+  back: ["#efe9df", "#e3dccf"],
+  left: ["#d8cfbf", "#e6dfd2"],
+  right: ["#d3c9b8", "#e4ddcf"],
+  ceiling: ["#f6f2eb", "#ece6dc"],
+  floor: ["#c9b89c", "#a8936f"],
+  frame: "#2b2420",
+  accentFrame: "#c6a66a",
+  trim: "#4a3628",
+  plank: "#8f7a58",
+};
+
+export function GalleryIllustration({
+  className,
+  animated = true,
+  palette = DEFAULT_PALETTE,
+  idPrefix = "gi",
+  figures = true,
+}: {
+  className?: string;
+  animated?: boolean;
+  palette?: IllustrationPalette;
+  idPrefix?: string;
+  figures?: boolean;
+}) {
+  const p = `${idPrefix}-`;
   const { x1, x2, y1, y2 } = VP.back;
   return (
     <svg
@@ -62,88 +101,88 @@ export function GalleryIllustration({ className, animated = true }: { className?
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
-        <linearGradient id="g-back" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#efe9df" />
-          <stop offset="1" stopColor="#e3dccf" />
+        <linearGradient id={`${p}g-back`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={palette.back[0]} />
+          <stop offset="1" stopColor={palette.back[1]} />
         </linearGradient>
-        <linearGradient id="g-left" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#d8cfbf" />
-          <stop offset="1" stopColor="#e6dfd2" />
+        <linearGradient id={`${p}g-left`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={palette.left[0]} />
+          <stop offset="1" stopColor={palette.left[1]} />
         </linearGradient>
-        <linearGradient id="g-right" x1="1" y1="0" x2="0" y2="0">
-          <stop offset="0" stopColor="#d3c9b8" />
-          <stop offset="1" stopColor="#e4ddcf" />
+        <linearGradient id={`${p}g-right`} x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0" stopColor={palette.right[0]} />
+          <stop offset="1" stopColor={palette.right[1]} />
         </linearGradient>
-        <linearGradient id="g-ceiling" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f6f2eb" />
-          <stop offset="1" stopColor="#ece6dc" />
+        <linearGradient id={`${p}g-ceiling`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={palette.ceiling[0]} />
+          <stop offset="1" stopColor={palette.ceiling[1]} />
         </linearGradient>
-        <linearGradient id="g-floor" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#c9b89c" />
-          <stop offset="1" stopColor="#a8936f" />
+        <linearGradient id={`${p}g-floor`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={palette.floor[0]} />
+          <stop offset="1" stopColor={palette.floor[1]} />
         </linearGradient>
-        <linearGradient id="g-room2" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${p}g-room2`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#f8f4ec" />
           <stop offset="1" stopColor="#ebe3d4" />
         </linearGradient>
-        <radialGradient id="g-pool" cx="0.5" cy="0" r="1">
+        <radialGradient id={`${p}g-pool`} cx="0.5" cy="0" r="1">
           <stop offset="0" stopColor="#ffe2a8" stopOpacity="0.55" />
           <stop offset="1" stopColor="#ffe2a8" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="g-floorlight" cx="0.5" cy="0.5" r="0.5">
+        <radialGradient id={`${p}g-floorlight`} cx="0.5" cy="0.5" r="0.5">
           <stop offset="0" stopColor="#fff3d6" stopOpacity="0.5" />
           <stop offset="1" stopColor="#fff3d6" stopOpacity="0" />
         </radialGradient>
         {/* Sample art */}
-        <linearGradient id="art-sunset" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${p}art-sunset`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#f2b880" />
           <stop offset="0.55" stopColor="#d9786a" />
           <stop offset="1" stopColor="#5d4a6b" />
         </linearGradient>
-        <linearGradient id="art-sea" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`${p}art-sea`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#bfd8d6" />
           <stop offset="0.5" stopColor="#5f8e98" />
           <stop offset="1" stopColor="#24465a" />
         </linearGradient>
-        <linearGradient id="art-garden" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`${p}art-garden`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#dfe6c8" />
           <stop offset="0.6" stopColor="#7b927d" />
           <stop offset="1" stopColor="#3f5243" />
         </linearGradient>
-        <linearGradient id="art-dune" x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id={`${p}art-dune`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#ecd2a5" />
           <stop offset="1" stopColor="#b98a52" />
         </linearGradient>
-        <linearGradient id="art-night" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${p}art-night`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#30344a" />
           <stop offset="1" stopColor="#8a6f8c" />
         </linearGradient>
-        <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id={`${p}sweep`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#fff" stopOpacity="0" />
           <stop offset="0.5" stopColor="#fff" stopOpacity="0.16" />
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
-        <clipPath id="clip-door">
+        <clipPath id={`${p}clip-door`}>
           <path d={`M548 ${y2} V350 a52 52 0 0 1 104 0 V${y2} Z`} />
         </clipPath>
       </defs>
 
       {/* Room shell */}
-      <polygon points={`0,0 ${VP.w},0 ${x2},${y1} ${x1},${y1}`} fill="url(#g-ceiling)" />
-      <polygon points={`${x1},${y2} ${x2},${y2} ${VP.w},${VP.h} 0,${VP.h}`} fill="url(#g-floor)" />
-      <polygon points={`0,0 ${x1},${y1} ${x1},${y2} 0,${VP.h}`} fill="url(#g-left)" />
-      <polygon points={`${VP.w},0 ${x2},${y1} ${x2},${y2} ${VP.w},${VP.h}`} fill="url(#g-right)" />
-      <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1} fill="url(#g-back)" />
+      <polygon points={`0,0 ${VP.w},0 ${x2},${y1} ${x1},${y1}`} fill={"url(#" + p + "g-ceiling)"} />
+      <polygon points={`${x1},${y2} ${x2},${y2} ${VP.w},${VP.h} 0,${VP.h}`} fill={"url(#" + p + "g-floor)"} />
+      <polygon points={`0,0 ${x1},${y1} ${x1},${y2} 0,${VP.h}`} fill={"url(#" + p + "g-left)"} />
+      <polygon points={`${VP.w},0 ${x2},${y1} ${x2},${y2} ${VP.w},${VP.h}`} fill={"url(#" + p + "g-right)"} />
+      <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1} fill={"url(#" + p + "g-back)"} />
 
       {/* Floor planks converging to the vanishing point */}
-      <g stroke="#8f7a58" strokeOpacity="0.28" strokeWidth="1.2">
+      <g stroke={palette.plank} strokeOpacity="0.28" strokeWidth="1.2">
         {Array.from({ length: 15 }, (_, i) => {
           const bx = x1 + ((x2 - x1) * (i + 0.5)) / 15;
           const fx = ((bx - 600) / ((x2 - x1) / 2)) * 760 + 600;
           return <line key={i} x1={bx} y1={y2} x2={fx} y2={VP.h} />;
         })}
       </g>
-      <ellipse cx="600" cy="640" rx="380" ry="70" fill="url(#g-floorlight)" />
+      <ellipse cx="600" cy="640" rx="380" ry="70" fill={"url(#" + p + "g-floorlight)"} />
 
       {/* Skylight strips */}
       <g fill="#fffaf0" opacity="0.9">
@@ -161,39 +200,39 @@ export function GalleryIllustration({ className, animated = true }: { className?
       </g>
 
       {/* Baseboards */}
-      <polygon points={`0,${VP.h} ${x1},${y2} ${x1},${y2 - 8} 0,${VP.h - 22}`} fill="#4a3628" opacity="0.55" />
-      <polygon points={`${VP.w},${VP.h} ${x2},${y2} ${x2},${y2 - 8} ${VP.w},${VP.h - 22}`} fill="#4a3628" opacity="0.5" />
-      <rect x={x1} y={y2 - 8} width={x2 - x1} height="8" fill="#4a3628" opacity="0.45" />
+      <polygon points={`0,${VP.h} ${x1},${y2} ${x1},${y2 - 8} 0,${VP.h - 22}`} fill={palette.trim} opacity="0.55" />
+      <polygon points={`${VP.w},${VP.h} ${x2},${y2} ${x2},${y2 - 8} ${VP.w},${VP.h - 22}`} fill={palette.trim} opacity="0.5" />
+      <rect x={x1} y={y2 - 8} width={x2 - x1} height="8" fill={palette.trim} opacity="0.45" />
 
       {/* Light pools on the walls */}
       <g className={animated ? "om-breathe" : undefined}>
-        <polygon points={quad("left", 0.12, 0.5, 0.05, 0.68)} fill="url(#g-pool)" />
-        <polygon points={quad("left", 0.55, 0.85, 0.12, 0.62)} fill="url(#g-pool)" />
-        <polygon points={quad("right", 0.12, 0.5, 0.05, 0.68)} fill="url(#g-pool)" />
-        <polygon points={quad("right", 0.55, 0.85, 0.12, 0.62)} fill="url(#g-pool)" />
-        <ellipse cx="465" cy="300" rx="70" ry="110" fill="url(#g-pool)" />
-        <ellipse cx="735" cy="300" rx="70" ry="110" fill="url(#g-pool)" />
+        <polygon points={quad("left", 0.12, 0.5, 0.05, 0.68)} fill={"url(#" + p + "g-pool)"} />
+        <polygon points={quad("left", 0.55, 0.85, 0.12, 0.62)} fill={"url(#" + p + "g-pool)"} />
+        <polygon points={quad("right", 0.12, 0.5, 0.05, 0.68)} fill={"url(#" + p + "g-pool)"} />
+        <polygon points={quad("right", 0.55, 0.85, 0.12, 0.62)} fill={"url(#" + p + "g-pool)"} />
+        <ellipse cx="465" cy="300" rx="70" ry="110" fill={"url(#" + p + "g-pool)"} />
+        <ellipse cx="735" cy="300" rx="70" ry="110" fill={"url(#" + p + "g-pool)"} />
       </g>
 
       {/* Side-wall frames */}
-      <SideFrame side="left" s1={0.18} s2={0.45} f1={0.3} f2={0.58} art="art-sunset" />
-      <SideFrame side="left" s1={0.6} s2={0.8} f1={0.33} f2={0.55} art="art-garden" frame="#c6a66a" />
-      <SideFrame side="right" s1={0.18} s2={0.45} f1={0.28} f2={0.6} art="art-sea" frame="#f4efe6" />
-      <SideFrame side="right" s1={0.6} s2={0.8} f1={0.34} f2={0.54} art="art-dune" />
+      <SideFrame prefix={p} side="left" s1={0.18} s2={0.45} f1={0.3} f2={0.58} art="art-sunset" frame={palette.frame} />
+      <SideFrame prefix={p} side="left" s1={0.6} s2={0.8} f1={0.33} f2={0.55} art="art-garden" frame={palette.accentFrame} />
+      <SideFrame prefix={p} side="right" s1={0.18} s2={0.45} f1={0.28} f2={0.6} art="art-sea" frame={palette.accentFrame} />
+      <SideFrame prefix={p} side="right" s1={0.6} s2={0.8} f1={0.34} f2={0.54} art="art-dune" frame={palette.frame} />
 
       {/* Back wall: doorway to the next room, flanked by two frames */}
-      <g clipPath="url(#clip-door)">
-        <rect x="540" y="290" width="120" height="220" fill="url(#g-room2)" />
+      <g clipPath={"url(#" + p + "clip-door)"}>
+        <rect x="540" y="290" width="120" height="220" fill={"url(#" + p + "g-room2)"} />
         <rect x="585" y="372" width="30" height="24" fill="#2b2420" />
-        <rect x="588" y="375" width="24" height="18" fill="url(#art-night)" />
+        <rect x="588" y="375" width="24" height="18" fill={"url(#" + p + "art-night)"} />
         <polygon points={`548,${y2} 652,${y2} 640,470 560,470`} fill="#c2b090" />
       </g>
       <path d={`M548 ${y2} V350 a52 52 0 0 1 104 0 V${y2}`} fill="none" stroke="#d2c8b6" strokeWidth="6" />
-      <rect x="418" y="262" width="96" height="122" fill="#2b2420" />
+      <rect x="418" y="262" width="96" height="122" fill={palette.frame} />
       <rect x="425" y="269" width="82" height="108" fill="#f7f3ea" />
-      <rect x="433" y="277" width="66" height="92" fill="url(#art-night)" />
-      <rect x="686" y="270" width="98" height="108" fill="#c6a66a" />
-      <rect x="692" y="276" width="86" height="96" fill="url(#art-dune)" />
+      <rect x="433" y="277" width="66" height="92" fill={"url(#" + p + "art-night)"} />
+      <rect x="686" y="270" width="98" height="108" fill={palette.accentFrame} />
+      <rect x="692" y="276" width="86" height="96" fill={"url(#" + p + "art-dune)"} />
       <rect x="452" y="398" width="28" height="9" rx="1.5" fill="#d9cfbd" />
       <rect x="721" y="392" width="28" height="9" rx="1.5" fill="#d9cfbd" />
 
@@ -207,7 +246,7 @@ export function GalleryIllustration({ className, animated = true }: { className?
       </g>
 
       {/* Two visitors, side by side */}
-      <g>
+      <g display={figures ? undefined : "none"}>
         <ellipse cx="300" cy="686" rx="62" ry="10" fill="rgba(36,35,33,0.2)" />
         <g fill="#2f2c29">
           <circle cx="282" cy="507" r="17" />
@@ -224,7 +263,7 @@ export function GalleryIllustration({ className, animated = true }: { className?
         <path d="M303 566 q12 10 14 2" stroke="#2f2c29" strokeWidth="6" strokeLinecap="round" fill="none" />
       </g>
 
-      {animated && <rect className="om-sweep" x="-400" y="0" width="400" height={VP.h} fill="url(#sweep)" />}
+      {animated && <rect className="om-sweep" x="-400" y="0" width="400" height={VP.h} fill={"url(#" + p + "sweep)"} />}
       <style>{`
         .om-breathe { animation: om-breathe 6s ease-in-out infinite; }
         @keyframes om-breathe { 0%,100% { opacity: .85 } 50% { opacity: 1 } }
