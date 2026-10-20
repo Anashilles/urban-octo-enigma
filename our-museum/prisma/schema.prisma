@@ -1,0 +1,498 @@
+// Our Museum — PostgreSQL schema.
+// See docs/DATABASE.md for the entity overview, deletion rules and RLS notes.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Authentication (Better Auth core schema + anonymous plugin)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id
+  /// Better Auth's `name` field is mapped to `displayName` in src/lib/auth/server.ts.
+  displayName   String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  /// Set by the Better Auth anonymous plugin for invitation-only guests.
+  isAnonymous   Boolean? @default(false)
+  locale        String   @default("en")
+  /// Non-sensitive UI preferences (onboarding dismissed, tutorial seen, …).
+  preferences   Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions           Session[]
+  accounts           Account[]
+  ownedMuseums       Museum[]           @relation("MuseumOwner")
+  memberships        MuseumMembership[]
+  avatarProfile      AvatarProfile?
+  createdInvitations MuseumInvitation[] @relation("InvitationCreator")
+  uploadedPhotos     Photo[]            @relation("PhotoUploader")
+  createdFrames      PhotoFrame[]       @relation("FrameCreator")
+  events             MuseumEvent[]      @relation("EventActor")
+  visits             MuseumVisit[]
+  favorites          PhotoFavorite[]
+  reactions          PhotoReaction[]
+  pendingUploads     PendingUpload[]
+  createdTours       GuidedTour[]       @relation("TourCreator")
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+/// Better Auth rate-limit storage (shared across instances).
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limits")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Museums, membership and invitations
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum MuseumRole {
+  OWNER
+  EDITOR
+  VISITOR
+}
+
+model Museum {
+  id            String   @id @default(cuid(2))
+  ownerId       String
+  owner         User     @relation("MuseumOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name          String
+  description   String   @default("")
+  /// One of the template ids in src/features/museums/templates.ts
+  templateId    String
+  /// ThemeConfig overrides (wall colour, floor material, lighting preset, default frame style).
+  theme         Json     @default("{}")
+  /// PrivacyConfig (guest look-together, anonymous guests, voice, reactions).
+  privacy       Json     @default("{}")
+  coverPhotoId  String?  @unique
+  coverPhoto    Photo?   @relation("MuseumCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  /// Incremented on every layout-affecting change; used for realtime refresh and stale-write detection.
+  layoutVersion Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships    MuseumMembership[]
+  invitations    MuseumInvitation[]
+  photos         Photo[]            @relation("MuseumPhotos")
+  collections    PhotoCollection[]
+  rooms          MuseumRoom[]
+  frames         PhotoFrame[]
+  events         MuseumEvent[]
+  visits         MuseumVisit[]
+  pendingUploads PendingUpload[]
+  tours          GuidedTour[]
+
+  @@index([ownerId])
+  @@map("museums")
+}
+
+model MuseumMembership {
+  id           String     @id @default(cuid(2))
+  museumId     String
+  museum       Museum     @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         MuseumRole
+  invitationId String?
+  invitation   MuseumInvitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([museumId, userId])
+  @@index([userId])
+  @@map("museum_memberships")
+}
+
+model MuseumInvitation {
+  id           String     @id @default(cuid(2))
+  museumId     String
+  museum       Museum     @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the secret token. The plaintext token is only ever shown once, at creation.
+  tokenHash    String     @unique
+  invitedEmail String?
+  /// EDITOR or VISITOR (never OWNER — enforced in InvitationService).
+  role         MuseumRole
+  expiresAt    DateTime
+  maxUses      Int
+  uses         Int        @default(0)
+  revokedAt    DateTime?
+  createdById  String
+  createdBy    User       @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  lastUsedAt   DateTime?
+
+  memberships MuseumMembership[]
+
+  @@index([museumId])
+  @@map("museum_invitations")
+}
+
+model MuseumVisit {
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  museumId      String
+  museum        Museum   @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  lastVisitedAt DateTime @default(now())
+  visitCount    Int      @default(1)
+
+  @@id([userId, museumId])
+  @@index([userId, lastVisitedAt])
+  @@map("museum_visits")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Photos, uploads and collections
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Photo {
+  id               String    @id @default(cuid(2))
+  museumId         String
+  museum           Museum    @relation("MuseumPhotos", fields: [museumId], references: [id], onDelete: Cascade)
+  /// Kept nullable so an editor deleting their account never deletes the owner's photos.
+  uploadedById     String?
+  uploadedBy       User?     @relation("PhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  /// Sanitised full-resolution image (EXIF orientation applied, metadata stripped).
+  storageKey       String    @unique
+  /// ~2048px derivative for the photo viewer.
+  largeKey         String    @unique
+  /// ~1024px derivative used as the wall texture when close.
+  mediumKey        String    @unique
+  /// ~400px derivative for lists and distant wall textures.
+  thumbnailKey     String    @unique
+  originalFilename String
+  mimeType         String
+  width            Int
+  height           Int
+  sizeBytes        Int
+  /// Average colour, used as an instant placeholder.
+  dominantColor    String    @default("#d8d2c6")
+  title            String    @default("")
+  caption          String    @default("")
+  takenAt          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  frames      PhotoFrame[]
+  collections CollectionPhoto[]
+  favorites   PhotoFavorite[]
+  reactions   PhotoReaction[]
+  coverOf     Museum?           @relation("MuseumCover")
+
+  @@index([museumId, createdAt])
+  @@index([museumId, takenAt])
+  @@map("photos")
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// A reserved upload slot. Abandoned slots are cleaned up by /api/cron/cleanup.
+model PendingUpload {
+  id               String       @id @default(cuid(2))
+  museumId         String
+  museum           Museum       @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incomingKey      String       @unique
+  originalFilename String
+  declaredMimeType String
+  declaredSize     Int
+  status           UploadStatus @default(PENDING)
+  error            String?
+  photoId          String?
+  createdAt        DateTime     @default(now())
+  expiresAt        DateTime
+
+  @@index([status, expiresAt])
+  @@index([museumId])
+  @@map("pending_uploads")
+}
+
+/// Durable queue of storage objects that must be deleted (retried by the cleanup job).
+model StorageDeletion {
+  id            String   @id @default(cuid(2))
+  key           String
+  reason        String
+  attempts      Int      @default(0)
+  lastError     String?
+  createdAt     DateTime @default(now())
+  nextAttemptAt DateTime @default(now())
+
+  @@index([nextAttemptAt])
+  @@map("storage_deletions")
+}
+
+model PhotoCollection {
+  id          String   @id @default(cuid(2))
+  museumId    String
+  museum      Museum   @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos CollectionPhoto[]
+
+  @@index([museumId, sortOrder])
+  @@map("photo_collections")
+}
+
+model CollectionPhoto {
+  collectionId String
+  collection   PhotoCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  photoId      String
+  photo        Photo           @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  sortOrder    Int             @default(0)
+  addedAt      DateTime        @default(now())
+
+  @@id([collectionId, photoId])
+  @@index([photoId])
+  @@map("collection_photos")
+}
+
+model PhotoFavorite {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photoId   String
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, photoId])
+  @@index([photoId])
+  @@map("photo_favorites")
+}
+
+model PhotoReaction {
+  id        String   @id @default(cuid(2))
+  photoId   String
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// One of: heart, smile, wow, tear
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([photoId, userId, emoji])
+  @@map("photo_reactions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Architecture: rooms, walls and frames
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MuseumRoom {
+  id        String   @id @default(cuid(2))
+  museumId  String
+  museum    Museum   @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  name      String
+  /// lobby | hall | gallery | corridor | special | reflection | custom
+  roomType  String
+  /// Interior dimensions in metres.
+  width     Float
+  depth     Float
+  height    Float
+  /// Centre of the room's floor in world space (metres).
+  positionX Float
+  positionZ Float
+  /// Rotation about the vertical axis in degrees (layouts use 0; reserved for future templates).
+  rotation  Float    @default(0)
+  /// RoomLayoutConfig: doorways, lighting, finishes and decor.
+  layout    Json     @default("{}")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  walls  MuseumWall[]
+  frames PhotoFrame[]
+
+  @@index([museumId, sortOrder])
+  @@map("museum_rooms")
+}
+
+model MuseumWall {
+  id        String     @id @default(cuid(2))
+  roomId    String
+  room      MuseumRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  /// north | east | south | west
+  wallKey   String
+  length    Float
+  height    Float
+  /// WallTransform: position relative to the room centre + yaw.
+  transform Json
+  /// PlacementBounds: usable u/v range plus exclusion rectangles (doorways).
+  bounds    Json
+  updatedAt DateTime   @updatedAt
+
+  frames PhotoFrame[]
+
+  @@unique([roomId, wallKey])
+  @@map("museum_walls")
+}
+
+model PhotoFrame {
+  id           String     @id @default(cuid(2))
+  museumId     String
+  museum       Museum     @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  roomId       String
+  room         MuseumRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  wallId       String
+  wall         MuseumWall @relation(fields: [wallId], references: [id], onDelete: Cascade)
+  photoId      String
+  photo        Photo      @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  /// Centre of the printed photo in wall-local coordinates (metres): u along the wall, v above the floor.
+  positionU    Float
+  positionV    Float
+  /// In-plane tilt in degrees (limited to ±10°).
+  rotation     Float      @default(0)
+  /// Size of the printed photo area in metres (aspect ratio always matches the photo).
+  width        Float
+  height       Float
+  frameStyle   String
+  /// FrameOptions: mat width/colour, plaque visibility, custom border colour.
+  frameOptions Json       @default("{}")
+  caption      String?
+  metadata     Json       @default("{}")
+  createdById  String?
+  createdBy    User?      @relation("FrameCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tourStops TourStop[]
+
+  @@index([museumId])
+  @@index([wallId])
+  @@index([photoId])
+  @@index([roomId])
+  @@map("photo_frames")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Avatars, tours and audit
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AvatarProfile {
+  id        String   @id @default(cuid(2))
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Identifier of the avatar model family (see src/features/avatars).
+  modelId   String
+  /// AvatarConfig JSON (validated by avatarConfigSchema).
+  config    Json
+  updatedAt DateTime @updatedAt
+
+  @@map("avatar_profiles")
+}
+
+model GuidedTour {
+  id          String   @id @default(cuid(2))
+  museumId    String
+  museum      Museum   @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  createdById String?
+  createdBy   User?    @relation("TourCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stops TourStop[]
+
+  @@index([museumId])
+  @@map("guided_tours")
+}
+
+model TourStop {
+  id        String     @id @default(cuid(2))
+  tourId    String
+  tour      GuidedTour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  frameId   String
+  frame     PhotoFrame @relation(fields: [frameId], references: [id], onDelete: Cascade)
+  sortOrder Int
+  note      String     @default("")
+
+  @@index([tourId, sortOrder])
+  @@map("tour_stops")
+}
+
+/// Append-only audit log. Metadata must never contain secrets or photo contents.
+model MuseumEvent {
+  id        String   @id @default(cuid(2))
+  /// Nullable so the audit trail survives museum deletion.
+  museumId  String?
+  museum    Museum?  @relation(fields: [museumId], references: [id], onDelete: SetNull)
+  actorId   String?
+  actor     User?    @relation("EventActor", fields: [actorId], references: [id], onDelete: SetNull)
+  eventType String
+  entityId  String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([museumId, createdAt])
+  @@index([eventType, createdAt])
+  @@map("museum_events")
+}
