@@ -1,5 +1,9 @@
 # Claude Code → OpenRouter
 
+> **Also in this repository:** [`our-museum/`](our-museum/) — *Our Museum*, a
+> 3D museum hung with your photos to walk through together. It is a separate
+> project; see [its README](our-museum/README.md).
+
 Configuration for pointing Claude Code at [OpenRouter](https://openrouter.ai)'s
 Anthropic-compatible Messages endpoint instead of `api.anthropic.com`.
 

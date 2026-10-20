@@ -1,0 +1,49 @@
+name: Our Museum
+
+on:
+  push:
+    paths: ["our-museum/**", ".github/workflows/our-museum.yml"]
+  pull_request:
+    paths: ["our-museum/**", ".github/workflows/our-museum.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: our-museum-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: our-museum
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: museum
+          POSTGRES_PASSWORD: museum
+          POSTGRES_DB: our_museum_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U museum -d our_museum_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      TEST_DATABASE_URL: postgresql://museum:museum@localhost:5432/our_museum_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: our-museum/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Production build (no secrets)
+        run: npm run build && npm run realtime:build
