@@ -112,9 +112,10 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
   const returnPose = useMuseumStore((s) => s.returnPose);
   const viewerOpen = useMuseumStore((s) => Boolean(s.viewer));
   const fadeKey = useMuseumStore((s) => s.fadeKey);
+  const placing = useMuseumStore((s) => Boolean(s.placement));
 
   const room = scene.rooms.find((r) => r.id === currentRoomId);
-  const focusedFrame = focusedFrameId ? scene.frames.find((f) => f.id === focusedFrameId) : null;
+  const focusedFrame = focusedFrameId && !placing ? scene.frames.find((f) => f.id === focusedFrameId) : null;
   const focusedPhoto = focusedFrame ? scene.photos.find((p) => p.id === focusedFrame.photoId) : null;
   const togglePanel = (p: Panel) => setPanel(panel === p ? null : p);
   const BackIcon = ArrowLeftIcon;
@@ -163,8 +164,8 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
         </div>
       </div>
 
-      {/* Crosshair while the mouse is captured */}
-      {locked && !viewerOpen && (
+      {/* Crosshair while the mouse is captured, and always while aiming a placement */}
+      {(locked || placing) && !viewerOpen && (
         <div className="pointer-events-none absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
           <div className={cn("size-1.5 rounded-full bg-ivory/90 shadow-[0_0_0_2px_rgba(23,25,29,0.35)] transition-transform", focusedFrame && "scale-150 bg-gold")} />
         </div>
@@ -196,7 +197,7 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
             </span>
           </button>
         )}
-        {!coarse && !locked && !viewerOpen && !focusedFrame && (
+        {!coarse && !locked && !viewerOpen && !focusedFrame && !placing && (
           <p className="glass-dark rounded-full px-4 py-1.5 text-xs text-ivory/75" data-testid="click-to-look">
             {t("museum.clickToLook")}
           </p>

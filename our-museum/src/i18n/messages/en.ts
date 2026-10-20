@@ -347,6 +347,18 @@ const en = {
       arrived: "You've arrived.",
       stop: "Stop guiding",
     },
+    placement: {
+      title: "Placing “{title}”",
+      valid: "Click, press E or choose “Hang here”.",
+      hangHere: "Hang here",
+      cancel: "Cancel",
+      smaller: "Smaller",
+      larger: "Larger",
+      aim_wall: "Aim at a wall.",
+      too_far: "Move closer to the wall.",
+      placed: "Photo hung on the wall.",
+      noPermission: "Only owners and editors can hang photos.",
+    },
     photos: {
       title: "Photos",
       all: "All photos",

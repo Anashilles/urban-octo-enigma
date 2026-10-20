@@ -17,6 +17,8 @@ export interface InputState {
   pointerLocked: boolean;
   /** One-shot actions consumed by the scene. */
   interactRequested: boolean;
+  /** While true, interactions confirm a wall placement instead of opening photos. */
+  placementMode: boolean;
 }
 
 export const input: InputState = {
@@ -29,6 +31,7 @@ export const input: InputState = {
   enabled: true,
   pointerLocked: false,
   interactRequested: false,
+  placementMode: false,
 };
 
 export const MOVEMENT_CODES = new Set([

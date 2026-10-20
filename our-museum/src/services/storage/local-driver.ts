@@ -87,3 +87,11 @@ export class LocalStorageDriver implements StorageDriver {
     }
   }
 }
+
+/**
+ * Type guard by name rather than `instanceof`: the driver is cached on
+ * globalThis and each route bundle may carry its own copy of the class.
+ */
+export function isLocalDriver(driver: StorageDriver): driver is LocalStorageDriver {
+  return driver.name === "local";
+}

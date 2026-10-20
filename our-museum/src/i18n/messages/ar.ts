@@ -351,6 +351,18 @@ const ar: DeepStrings<Messages> = {
       arrived: "لقد وصلت.",
       stop: "إيقاف الإرشاد",
     },
+    placement: {
+      title: "تعليق «{title}»",
+      valid: "انقر أو اضغط E أو اختر «علّقها هنا».",
+      hangHere: "علّقها هنا",
+      cancel: "إلغاء",
+      smaller: "أصغر",
+      larger: "أكبر",
+      aim_wall: "صوّب نحو جدار.",
+      too_far: "اقترب من الجدار.",
+      placed: "عُلّقت الصورة على الجدار.",
+      noPermission: "المالكون والمحرّرون وحدهم يستطيعون تعليق الصور.",
+    },
     photos: {
       title: "الصور",
       all: "كل الصور",

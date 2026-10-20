@@ -3,7 +3,7 @@ import { apiHandler } from "@/lib/api/handler";
 import { storageSigningSecret } from "@/lib/env";
 import { errors } from "@/lib/errors";
 import { storage } from "@/services/storage";
-import { LocalStorageDriver } from "@/services/storage/local-driver";
+import { isLocalDriver } from "@/services/storage/local-driver";
 import { verify } from "@/services/storage/signing";
 
 /**
@@ -13,7 +13,7 @@ import { verify } from "@/services/storage/signing";
 export const GET = apiHandler(
   async (req) => {
     const driver = storage();
-    if (!(driver instanceof LocalStorageDriver)) throw errors.notFound();
+    if (!isLocalDriver(driver)) throw errors.notFound();
     const url = new URL(req.url);
     const key = url.searchParams.get("k") ?? "";
     const exp = Number(url.searchParams.get("e"));

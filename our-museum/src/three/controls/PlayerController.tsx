@@ -156,6 +156,10 @@ export function PlayerController({
       const type = drag.type;
       drag = null;
       if (!wasTap || !input.enabled) return;
+      if (input.placementMode) {
+        input.interactRequested = true;
+        return;
+      }
       const rect = el.getBoundingClientRect();
       const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
       const hit = pickAtPointer(ndc);
@@ -359,7 +363,8 @@ export function PlayerController({
       focusRef.current = best;
       onFocus(best);
     }
-    if (input.interactRequested) {
+    // In placement mode the placement tool consumes interactions.
+    if (input.interactRequested && !input.placementMode) {
       input.interactRequested = false;
       if (focusRef.current && input.enabled) onInteract(focusRef.current);
       else if (input.pointerLocked) {

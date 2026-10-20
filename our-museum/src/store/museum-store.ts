@@ -18,6 +18,8 @@ export interface ViewerState {
 
 export interface PlacementState {
   photoId: string;
+  /** Size multiplier chosen with the HUD buttons. */
+  scale?: number;
   /** Live preview computed by the scene. */
   preview: { roomId: string; wallId: string; wallKey: string; u: number; v: number; width: number; height: number; valid: boolean; problem?: string } | null;
 }
