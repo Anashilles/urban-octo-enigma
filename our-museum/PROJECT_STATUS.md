@@ -27,9 +27,10 @@ What was actually executed (not just written):
 | --- | --- |
 | TypeScript (`tsc --noEmit`), ESLint | Clean |
 | Vitest unit + integration (real PostgreSQL) | 124 passed in 16 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
-| S3 driver against a real S3 API (moto server) | 3 passed (opt-in test, `S3_TEST_ENDPOINT`) |
+| S3 driver against an S3-compatible server (moto, an AWS S3 emulator) | 3 passed (opt-in test, `S3_TEST_ENDPOINT`) |
 | Playwright end to end (headless Chromium, software WebGL) | 8 passed (desktop + mobile projects) |
 | `npm audit --omit=dev` | 0 vulnerabilities |
+| GitHub Actions (`.github/workflows/our-museum.yml`) | Green: lint, typecheck, 124 tests against a PostgreSQL service, production build |
 | Production build without any secrets present | Succeeds |
 | Docker: build `web`, `realtime`, `tools`; `docker compose up` on a fresh database | Migrations applied, seed ran, health checks green, sign-in, JPEG + HEIC upload, signed thumbnails, 3D museum rendered, WebSocket connected, cron endpoint authorised/refused correctly |
 
@@ -82,7 +83,9 @@ Listed plainly so nobody mistakes them for finished:
 11. **Content features not built** — narrated (audio) tours, video uploads,
     comments/guestbook, importing from photo services, custom 3D model
     upload for avatars or decor, and museum export/download.
-12. **CI** — tests run locally; there is no hosted CI pipeline yet.
+12. **E2E in CI** — GitHub Actions runs lint, typecheck, unit + integration
+    tests and a secret-free build on every push; the Playwright suite (3D in
+    software WebGL, ~3 minutes) still runs only locally.
 
 ## Security follow-ups
 

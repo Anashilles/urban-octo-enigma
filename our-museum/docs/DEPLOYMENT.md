@@ -127,10 +127,14 @@ internal MinIO hostname), set `S3_ENDPOINT` to the internal one and
 `S3_PUBLIC_ENDPOINT` to the public one; the CSP allows the public origin
 automatically.
 
-The S3 driver is covered by an opt-in integration test against a real S3 API
-(`S3_TEST_ENDPOINT=http://127.0.0.1:9000 npx vitest run tests/integration/s3-storage.test.ts`).
-A full browser upload against a cloud bucket (including CORS) has not been
-verified yet.
+The S3 driver has an opt-in integration test for any S3-compatible server:
+
+```bash
+S3_TEST_ENDPOINT=http://127.0.0.1:9000 npx vitest run tests/integration/s3-storage.test.ts
+```
+
+So far it has run against moto (an AWS S3 emulator). A full browser upload
+against a cloud bucket (including CORS) has not been verified yet.
 
 ## Environment variables
 
