@@ -7,6 +7,8 @@ import { WALL_KEYS } from "@/features/rooms/geometry";
 import { useT } from "@/i18n/client";
 import { useInputBlock, useMuseumStore } from "@/store/museum-store";
 import { usePreferences } from "@/store/preferences";
+import { LocalAvatar } from "@/three/avatars/LocalAvatar";
+import { emitLocalGesture } from "@/three/runtime";
 import { GuideArrow } from "@/three/scenes/GuideArrow";
 import { MuseumCanvas, detectWebGL, useEffectiveQuality } from "@/three/scenes/MuseumCanvas";
 import { MuseumWorld } from "@/three/scenes/MuseumWorld";
@@ -96,6 +98,7 @@ export function MuseumExperience(props: MuseumExperienceProps) {
         p.set({ cameraMode: p.cameraMode === "first" ? "third" : "first" });
       } else if (code === "KeyH" || code === "Slash") setHelpOpen(true);
       else if (code === "KeyP") setPanel("collections");
+      else if (code === "KeyG") emitLocalGesture("wave");
     },
     [setPanel],
   );
@@ -117,6 +120,7 @@ export function MuseumExperience(props: MuseumExperienceProps) {
           onPhotoTextureError={props.onPhotoTextureError}
         >
           <GuideArrow scene={scene} onArrive={() => toast(t("museum.guide.arrived"))} />
+          <LocalAvatar config={scene.viewer.avatar} />
           {props.worldExtras}
         </MuseumWorld>
       </MuseumCanvas>

@@ -32,6 +32,20 @@ export function requestMove(move: MoveRequest) {
   pending.move = move;
 }
 
+/** One-shot gestures performed by the local visitor (shown on their avatar and sent to others). */
+export type Gesture = "wave";
+const gestureTarget: EventTarget | null = typeof window !== "undefined" ? new EventTarget() : null;
+
+export function emitLocalGesture(gesture: Gesture) {
+  gestureTarget?.dispatchEvent(new CustomEvent<Gesture>("gesture", { detail: gesture }));
+}
+
+export function onLocalGesture(fn: (gesture: Gesture) => void): () => void {
+  const handler = (e: Event) => fn((e as CustomEvent<Gesture>).detail);
+  gestureTarget?.addEventListener("gesture", handler);
+  return () => gestureTarget?.removeEventListener("gesture", handler);
+}
+
 /** Test hooks (enabled with NEXT_PUBLIC_ENABLE_TEST_HOOKS=true) — read-only views for E2E tests. */
 export function exposeTestHooks(extra: Record<string, unknown>) {
   if (process.env.NEXT_PUBLIC_ENABLE_TEST_HOOKS !== "true" || typeof window === "undefined") return;

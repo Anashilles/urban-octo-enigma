@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSceneRefresher } from "./use-scene-refresher";
-import { PencilRulerIcon } from "lucide-react";
+import { PencilRulerIcon, UserRoundIcon } from "lucide-react";
 import { HudIconButton } from "@/components/museum/Hud";
 import { MuseumExperience } from "@/components/museum/MuseumExperience";
 import { PlacementBar } from "@/components/museum/PlacementBar";
@@ -107,6 +107,14 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
           : undefined
       }
       worldExtras={canEdit ? <PlacementTool onConfirm={(p) => void hang(p)} /> : null}
+      settingsExtra={
+        <Button asChild variant="glass" className="w-full" data-testid="settings-edit-avatar">
+          <Link href={`/avatar?returnTo=${encodeURIComponent(`/museum/${museumId}`)}`}>
+            <UserRoundIcon aria-hidden="true" />
+            {t("nav.avatar")}
+          </Link>
+        </Button>
+      }
       toolbar={
         canEdit ? (
           <HudIconButton label={t("museum.hud.edit")} onClick={() => router.push(`/editor/${museumId}`)} testId="hud-edit">

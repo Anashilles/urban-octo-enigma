@@ -2,6 +2,7 @@
  * Builds a complete, clearly labelled sample museum in the browser — used by
  * the public demo and the landing-page preview. No database, no user photos.
  */
+import { defaultAvatar } from "@/features/avatars/config";
 import { ACTIONS, type Action } from "@/lib/permissions";
 import type { Translator } from "@/i18n/translate";
 import {
@@ -134,7 +135,7 @@ export function buildDemoScene(templateId: TemplateId, t: Translator, photoCount
       photoIds: photos.filter((_, j) => j % 3 === i).map((p) => p.id),
     })),
     tours: [],
-    viewer: { userId: null, displayName: "", role: null, isGuest: true, permissions },
+    viewer: { userId: null, displayName: "", role: null, isGuest: true, permissions, avatar: defaultAvatar("demo-visitor") },
     spawn: template.spawn,
     isDemo: true,
     urlsExpireAt: null,

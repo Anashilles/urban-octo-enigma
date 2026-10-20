@@ -1,3 +1,4 @@
+import type { AvatarConfig } from "@/features/avatars/config";
 import type { Action, Role } from "@/lib/permissions";
 import type { FrameOptions, FrameStyle } from "@/features/photo-placement/placement";
 import type { RoomShape, WallKey } from "@/features/rooms/geometry";
@@ -74,6 +75,8 @@ export interface SceneViewer {
   role: Role | null;
   isGuest: boolean;
   permissions: Record<Action, boolean>;
+  /** The viewer's own avatar (seeded default until they customise it). */
+  avatar: AvatarConfig;
 }
 
 export interface SceneData {

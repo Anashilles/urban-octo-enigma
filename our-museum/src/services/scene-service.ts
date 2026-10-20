@@ -7,6 +7,7 @@ import { resolvePrivacy, resolveTheme, themeOverridesSchema } from "@/features/m
 import { frameOptionsSchema, FRAME_STYLES, type FrameStyle } from "@/features/photo-placement/placement";
 import { roomAt, WALL_KEYS, type WallKey } from "@/features/rooms/geometry";
 import { requireMuseumAccess } from "./access";
+import { getAvatar } from "./avatar-service";
 import { recordVisit } from "./museum-service";
 import { toRoomShape } from "./room-service";
 import { SIGNED_URL_TTL_SECONDS, storage } from "./storage";
@@ -28,7 +29,7 @@ export async function signedPhotoUrls(p: { thumbnailKey: string; mediumKey: stri
  */
 export async function getScene(user: { id: string; displayName: string; isAnonymous: boolean }, museumId: string, opts: { recordVisit?: boolean } = {}): Promise<SceneData> {
   const { museum, role } = await requireMuseumAccess(user.id, museumId, "museum.view");
-  const [owner, rooms, frames, photos, collections, tours, reactions] = await Promise.all([
+  const [owner, rooms, frames, photos, collections, tours, reactions, avatar] = await Promise.all([
     prisma.user.findUnique({ where: { id: museum.ownerId }, select: { displayName: true } }),
     prisma.museumRoom.findMany({ where: { museumId }, orderBy: { sortOrder: "asc" }, include: { walls: true } }),
     prisma.photoFrame.findMany({ where: { museumId }, include: { wall: { select: { wallKey: true } } }, orderBy: { createdAt: "asc" } }),
@@ -51,6 +52,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
       include: { stops: { orderBy: { sortOrder: "asc" } } },
     }),
     prisma.photoReaction.findMany({ where: { photo: { museumId } }, select: { photoId: true, emoji: true, userId: true } }),
+    getAvatar(user.id),
   ]);
 
   const reactionCounts = new Map<string, Record<string, number>>();
@@ -154,6 +156,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
       role,
       isGuest: user.isAnonymous,
       permissions: permissionsFor(role, { guestsCanStartSharedViewing: privacy.guestsCanStartSharedViewing }),
+      avatar: avatar.config,
     },
     spawn,
     isDemo: false,
