@@ -29,9 +29,9 @@ What was actually executed (not just written):
 | Check | Result |
 | --- | --- |
 | TypeScript (`tsc --noEmit`), ESLint | Clean |
-| Vitest unit + integration (real PostgreSQL) | 143 passed in 19 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
+| Vitest unit + integration (real PostgreSQL) | 152 passed in 20 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
 | S3 driver against an S3-compatible server (moto, an AWS S3 emulator) | 3 passed (opt-in test, `S3_TEST_ENDPOINT`) |
-| Playwright end to end (headless Chromium, software WebGL) | 14 passed, 1 opt-in skipped (TURN relay) — desktop + mobile projects |
+| Playwright end to end (headless Chromium, software WebGL) | 15 passed, 1 opt-in skipped (TURN relay) — desktop + mobile projects |
 | `npm audit --omit=dev` | 0 vulnerabilities |
 | GitHub Actions (`.github/workflows/our-museum.yml`) | Green: lint, typecheck, unit + integration tests against a PostgreSQL service, production build, Playwright suite |
 | Production build without any secrets present | Succeeds |
@@ -43,8 +43,10 @@ editors; Arabic/RTL landing page; demo museum keyboard
 walking, opening and closing a photograph; a full guided tour; the accessible
 list when WebGL is unavailable; sign-up → create museum → upload → hang →
 find the photos in 3D after a reload; avatar customisation; two browsers —
-invite a guest, see each other, Look Together; phone layout with touch
-controls.
+invite a guest, see each other, Look Together; comments and the guestbook
+live between two browsers; downloading an export and opening it offline;
+recording a tour narration with Chromium's fake microphone and hearing it
+play on the tour; phone layout with touch controls.
 
 Checked by hand in browsers during development: placing photos while
 walking (overlap and doorway refusal), avatar walk/run/wave and third person,
