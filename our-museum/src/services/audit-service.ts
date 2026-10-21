@@ -24,6 +24,7 @@ export type AuditEventType =
   | "member.left"
   | "tour.saved"
   | "tour.deleted"
+  | "museum.exported"
   | "comment.removed"
   | "guestbook.removed";
 

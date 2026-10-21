@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2Icon } from "lucide-react";
+import { DownloadIcon, Loader2Icon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -112,6 +112,24 @@ export function SettingsTab() {
             </div>
           ))}
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("export.settingsTitle")}</CardTitle>
+          <CardDescription>{isOwner ? t("export.settingsBody") : t("export.settingsOwnerOnly")}</CardDescription>
+        </CardHeader>
+        {isOwner && (
+          <CardContent>
+            <Button asChild variant="outline">
+              {/* A plain link: the browser streams the ZIP straight to disk. */}
+              <a href={`/api/museums/${museumId}/export`} download data-testid="export-museum">
+                <DownloadIcon aria-hidden="true" />
+                {t("export.settingsButton")}
+              </a>
+            </Button>
+          </CardContent>
+        )}
       </Card>
 
       {isOwner ? (

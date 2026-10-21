@@ -89,6 +89,15 @@ notes. Changes are broadcast with the `comments` scope; the scene carries
 counts (`photo.commentCount`, `museum.guestbookCount`), and an open comments
 panel or guestbook reloads when its count changes.
 
+## Export
+
+`GET /api/museums/:id/export` (owner only, `museum.export`, rate-limited)
+streams a ZIP built with `fflate`: the sanitised originals under `photos/`,
+`museum.json` (format `our-museum-export`, version 1) and `index.html`, a
+self-contained gallery with no scripts and a CSP that only allows the bundled
+images. Files are read one at a time as the download is consumed, and a
+missing photo file is reported in the manifest instead of failing the export.
+
 ## 3D runtime
 
 React Three Fiber renders a single canvas (`src/three/scenes/MuseumCanvas.tsx`).

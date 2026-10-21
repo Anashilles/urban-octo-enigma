@@ -22,6 +22,7 @@ English and Arabic (full right-to-left layout) are built in.
 | Together | Invitations (hashed single-use or multi-use links, email optional), presence, smooth movement, name tags, **Look Together** (shared photo viewing), live tours, reactions, go-to-person |
 | Voice | Optional WebRTC voice chat with spatial audio, mute, speaking indicators and listen-only fallback; optional relay-only mode |
 | Notes | Comments on each photograph (in the viewer) and a museum guestbook, live for everyone present, moderated by the owner |
+| Export | The owner downloads a ZIP: original photos, `museum.json` (rooms, frames, collections, tours, notes) and an offline gallery page |
 | Roles | Owner / Editor / Visitor, enforced on the server for every API call and realtime message |
 | Operations | Health endpoint, admin diagnostics, maintenance cron, Docker images and compose stack |
 

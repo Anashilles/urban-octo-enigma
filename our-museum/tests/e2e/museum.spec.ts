@@ -1,4 +1,8 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { unzipSync } from "fflate";
 import { createMuseum, prepare, signUp, uploadAndHang, waitForMuseum } from "./helpers";
 
 const frames = (page: Page) => page.evaluate(() => (window as unknown as { __museum: { frames: () => unknown[] } }).__museum.frames().length);
@@ -84,4 +88,29 @@ test("frame edits: quick nudges save in order, and someone else's change is neve
   await page.keyboard.press("ArrowRight");
   await expect.poll(async () => (await serverFrame()).u).toBeCloseTo(current.u + 0.05, 3);
   expect((await serverFrame()).v).toBeCloseTo(current.v - 0.1, 3);
+});
+
+test("the owner downloads the museum and the copy opens offline", async ({ page, context }, testInfo) => {
+  await prepare(context);
+  await signUp(page, "Archivist");
+  const museumId = await createMuseum(page, "Keepsake");
+  await uploadAndHang(page, museumId, 2);
+  await page.goto(`/editor/${museumId}?tab=settings`);
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("export-museum").click()]);
+  expect(download.suggestedFilename()).toMatch(/^our-museum-keepsake-\d{4}-\d{2}-\d{2}\.zip$/);
+  const files = unzipSync(new Uint8Array(await readFile(await download.path())));
+  expect(Object.keys(files).filter((n) => n.startsWith("photos/"))).toHaveLength(2);
+
+  // Unpack and open the offline page straight from disk.
+  const dir = testInfo.outputPath("export");
+  for (const [name, bytes] of Object.entries(files)) {
+    await mkdir(path.dirname(path.join(dir, name)), { recursive: true });
+    await writeFile(path.join(dir, name), bytes);
+  }
+  const offline = await context.newPage();
+  await offline.goto(pathToFileURL(path.join(dir, "index.html")).href);
+  await expect(offline.getByRole("heading", { level: 1 })).toHaveText("Keepsake");
+  const images = offline.locator("figure img");
+  await expect(images).toHaveCount(2);
+  await expect.poll(() => images.evaluateAll((list) => list.every((img) => (img as HTMLImageElement).naturalWidth > 0))).toBe(true);
 });

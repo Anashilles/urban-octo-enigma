@@ -53,6 +53,7 @@ app itself (no requests to Google from visitors' browsers).
 | @aws-sdk/client-s3, @aws-sdk/s3-request-presigner | Apache-2.0 |
 | nodemailer | MIT-0 |
 | lucide-react | ISC |
+| fflate (ZIP export) | MIT |
 
 Licence values above were read from the installed packages' `package.json`.
 Run `npx license-checker --production --summary` (or your preferred tool)

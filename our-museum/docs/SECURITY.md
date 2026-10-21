@@ -16,6 +16,7 @@ this person see or change this?" is **no** unless the server says yes.
 | Cross-site scripting | React escaping, no `dangerouslySetInnerHTML` for user content, a per-request nonce CSP with `strict-dynamic`, `object-src 'none'`, `frame-ancestors 'none'` |
 | Realtime impersonation or eavesdropping | Connections need a single-use, 60-second ticket minted after a membership check; origin allow-list; every message validated and permission-checked; removed members are disconnected immediately |
 | Abuse and brute force | Rate limits on sign-in, sign-up, password reset, API calls, uploads, invitations, comments, tickets and realtime messages |
+| Bulk copying of a museum | Only the owner can export (3 per 15 minutes); exports are audited and contain display names but no email addresses; the offline page runs no scripts |
 | Unwanted comments | Comments and guestbook entries are plain text rendered as text (never HTML); authors delete their own, owners can remove any (audited), and owners can turn both off |
 | Secrets in the client | Only `NEXT_PUBLIC_ENABLE_TEST_HOOKS` (a boolean, off in production) is exposed to the browser; storage, database, TURN and auth secrets stay on the server |
 
@@ -93,6 +94,7 @@ cross-museum id substitution for frames.
 | Realtime tickets | burst 20, 1 per 2 s | 〃 |
 | Emails sent by the app | burst 5, 1 per minute | 〃 |
 | Comments and guestbook entries | burst 20, 1 per 6 s | 〃 |
+| Museum exports | burst 3, 1 per 5 minutes | 〃 |
 | Realtime connections | burst 20 per IP, 1 per 2 s | `realtime/server.ts` |
 | Realtime messages | poses 25/s, voice signalling 50/s, other 8/s per connection; repeated abuse closes the connection | 〃 |
 

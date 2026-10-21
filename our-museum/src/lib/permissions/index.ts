@@ -34,6 +34,7 @@ export const ACTIONS = [
   "voice.join",
   "comment.write",
   "comment.moderate",
+  "museum.export",
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -48,6 +49,7 @@ const OWNER_ONLY: Action[] = [
   "member.changeRole",
   "shared.manage",
   "comment.moderate",
+  "museum.export",
 ];
 
 const EDITOR: Action[] = [
