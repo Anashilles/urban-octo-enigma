@@ -74,8 +74,18 @@ export function RadioGroupItem({ className, ...props }: React.ComponentProps<typ
 }
 
 /* Slider ------------------------------------------------------------------ */
-export function Slider({ className, ...props }: React.ComponentProps<typeof SliderPrimitive.Root>) {
+/**
+ * The accessible name belongs on the thumb (the element with role="slider"):
+ * `aria-label`, `aria-labelledby`, or — with an `id` — the matching <Label htmlFor>.
+ */
+export function Slider({
+  className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  ...props
+}: React.ComponentProps<typeof SliderPrimitive.Root>) {
   const values = props.value ?? props.defaultValue ?? [props.min ?? 0];
+  const labelledBy = ariaLabelledBy ?? (!ariaLabel && props.id ? `${props.id}-label` : undefined);
   return (
     <SliderPrimitive.Root
       data-slot="slider"
@@ -88,6 +98,8 @@ export function Slider({ className, ...props }: React.ComponentProps<typeof Slid
       {values.map((_, i) => (
         <SliderPrimitive.Thumb
           key={i}
+          aria-label={ariaLabel}
+          aria-labelledby={labelledBy}
           className="block size-5 shrink-0 rounded-full border-2 border-charcoal bg-ivory shadow-sm transition-[box-shadow] outline-none hover:ring-4 hover:ring-ring/30 focus-visible:ring-4 focus-visible:ring-ring/40"
         />
       ))}

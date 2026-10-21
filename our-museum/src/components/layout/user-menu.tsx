@@ -43,11 +43,13 @@ export function UserMenu({ user, tone = "light" }: { user: MenuUser; tone?: "lig
         <Button
           variant={tone === "dark" ? "glass" : "outline"}
           size="icon"
-          aria-label={t("nav.account")}
           data-testid="user-menu"
           className="font-display text-base"
         >
-          {initials(user.displayName)}
+          <span aria-hidden="true">{initials(user.displayName)}</span>
+          <span className="sr-only">
+            {t("nav.account")}: {user.displayName}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">

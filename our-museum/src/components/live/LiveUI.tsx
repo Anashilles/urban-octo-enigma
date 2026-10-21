@@ -11,6 +11,7 @@ import { useT } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 import { useMuseumStore } from "@/store/museum-store";
 import { useRealtimeStore, type RealtimeStatus } from "@/store/realtime-store";
+import { usePanelExitFocus } from "@/components/museum/focus";
 import type { RealtimeActions } from "./use-realtime";
 
 function usePeers() {
@@ -78,6 +79,7 @@ export function PeopleSheet({ scene, actions, voiceSection }: { scene: SceneData
   const t = useT();
   const panel = useMuseumStore((s) => s.panel);
   const setPanel = useMuseumStore((s) => s.setPanel);
+  const exitFocus = usePanelExitFocus();
   const status = useRealtimeStore((s) => s.status);
   const shared = useRealtimeStore((s) => s.shared);
   const following = useRealtimeStore((s) => s.following);
@@ -88,7 +90,16 @@ export function PeopleSheet({ scene, actions, voiceSection }: { scene: SceneData
   };
   return (
     <Sheet open={panel === "people"} onOpenChange={(o) => !o && setPanel(null)} modal={false}>
-      <SheetContent side="end" tone="dark" modal={false} closeLabel={t("common.close")} className="overflow-y-auto" data-hud-panel data-testid="people-panel">
+      <SheetContent
+        side="end"
+        tone="dark"
+        modal={false}
+        closeLabel={t("common.close")}
+        className="overflow-y-auto"
+        onCloseAutoFocus={exitFocus.onCloseAutoFocus}
+        data-hud-panel
+        data-testid="people-panel"
+      >
         <SheetHeader>
           <SheetTitle>{t("museum.live.peopleTitle")}</SheetTitle>
           <SheetDescription className="text-ivory/60">{status === "online" ? t("museum.live.here", { count: others.length }) : t("museum.live.offlineHint")}</SheetDescription>
@@ -137,6 +148,7 @@ export function PeopleSheet({ scene, actions, voiceSection }: { scene: SceneData
                       size="sm"
                       variant="glass"
                       onClick={() => {
+                        exitFocus.toScene();
                         actions.goToPeer(p.id);
                         setPanel(null);
                       }}

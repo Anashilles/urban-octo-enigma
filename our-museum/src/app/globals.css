@@ -17,10 +17,11 @@
   --graphite: #77736b;
   --ink: #17191d;
   --gold: #c6a66a;
-  --gold-deep: #a9884d;
+  /* Darkened from #a9884d so small text meets WCAG AA (≥4.5:1) on ivory, card and muted. */
+  --gold-deep: #7f622d;
   --sage: #7b927d;
   --walnut: #4a3628;
-  --danger: #c94f4f;
+  --danger: #ad3a3a;
 
   --background: var(--ivory);
   --foreground: var(--charcoal);
@@ -33,7 +34,7 @@
   --secondary: var(--gallery-wall);
   --secondary-foreground: var(--charcoal);
   --muted: #efeae2;
-  --muted-foreground: #6e6a62;
+  --muted-foreground: #66625a;
   --accent: #efe6d2;
   --accent-foreground: var(--charcoal);
   --destructive: var(--danger);

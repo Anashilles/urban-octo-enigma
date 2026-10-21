@@ -33,12 +33,13 @@ export function LanguageSwitcher({ tone = "light", className }: { tone?: "light"
         <Button
           variant={tone === "dark" ? "glass" : "ghost"}
           size="sm"
-          aria-label={t("common.language")}
           disabled={pending}
           className={cn("gap-1.5", className)}
           data-testid="language-switcher"
         >
           <LanguagesIcon aria-hidden="true" />
+          {/* The accessible name contains the visible text ("Language: English"). */}
+          <span className="sr-only">{t("common.language")}: </span>
           <span>{localeNames[locale]}</span>
         </Button>
       </DropdownMenuTrigger>

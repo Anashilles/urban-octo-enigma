@@ -42,12 +42,18 @@ export function MuseumCanvas({
   onQualityDrop,
   className,
   fov,
+  label,
+  interactive = true,
 }: {
   children: ReactNode;
   quality: Quality;
   onQualityDrop?: () => void;
   className?: string;
   fov?: number;
+  /** Accessible name; for interactive canvases it should mention the controls. */
+  label: string;
+  /** Keyboard-operable canvases take focus as an application; previews are images. */
+  interactive?: boolean;
 }) {
   const maxDpr = quality === "high" ? 2 : quality === "medium" ? 1.5 : 1;
   const [dpr, setDpr] = useState(Math.min(maxDpr, typeof window !== "undefined" ? window.devicePixelRatio : 1));
@@ -60,8 +66,10 @@ export function MuseumCanvas({
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
       }}
-      tabIndex={0}
-      aria-label="3D museum"
+      tabIndex={interactive ? 0 : undefined}
+      role={interactive ? "application" : "img"}
+      data-scene-canvas={interactive ? "" : undefined}
+      aria-label={label}
       data-testid="museum-canvas"
     >
       <PerformanceMonitor

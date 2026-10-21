@@ -81,6 +81,22 @@ function SaveIndicator() {
 
 function EditorBody({ tab, onTab, created }: { tab: EditorTab; onTab: (t: EditorTab) => void; created: boolean }) {
   const { t, dir } = useI18n();
+  // Tabs pattern: arrows move between tabs (mirrored in right-to-left), Home/End jump to the ends.
+  const onTabKey = (e: React.KeyboardEvent) => {
+    const i = visible.indexOf(tab);
+    const forward = dir === "rtl" ? "ArrowLeft" : "ArrowRight";
+    const back = dir === "rtl" ? "ArrowRight" : "ArrowLeft";
+    let next = -1;
+    if (e.key === "ArrowDown" || e.key === forward) next = (i + 1) % visible.length;
+    else if (e.key === "ArrowUp" || e.key === back) next = (i - 1 + visible.length) % visible.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = visible.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    const target = visible[next]!;
+    onTab(target);
+    document.getElementById(`editor-tab-${target}`)?.focus();
+  };
   const { scene, museumId } = useEditor();
   const uploading = useUploadQueue((s) => s.items.some((i) => i.status === "uploading" || i.status === "processing" || i.status === "queued"));
   useUnsavedGuard(uploading, t("editor.unsaved"));
@@ -116,32 +132,35 @@ function EditorBody({ tab, onTab, created }: { tab: EditorTab; onTab: (t: Editor
       </header>
       <div className="flex flex-1 flex-col lg:flex-row">
         <nav aria-label={t("editor.title")} className="border-b border-border px-3 py-2 lg:w-56 lg:shrink-0 lg:border-e lg:border-b-0 lg:px-3 lg:py-5">
-          <ul className="flex gap-1 overflow-x-auto lg:flex-col" role="tablist">
+          <div className="flex gap-1 overflow-x-auto lg:flex-col" role="tablist" onKeyDown={onTabKey}>
             {visible.map((k) => {
               const Icon = ICONS[k];
               const active = k === tab;
               return (
-                <li key={k}>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => onTab(k)}
-                    className={cn(
-                      "flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm whitespace-nowrap transition",
-                      active ? "bg-charcoal text-ivory" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                    )}
-                    data-testid={`editor-tab-${k}`}
-                  >
-                    <Icon className="size-4" aria-hidden="true" />
-                    {t(`editor.tabs.${k}`)}
-                  </button>
-                </li>
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  id={`editor-tab-${k}`}
+                  aria-selected={active}
+                  aria-controls="editor-panel"
+                  tabIndex={active ? 0 : -1}
+                  onClick={() => onTab(k)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm whitespace-nowrap transition lg:w-full",
+                    active ? "bg-charcoal text-ivory" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                  data-testid={`editor-tab-${k}`}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {t(`editor.tabs.${k}`)}
+                </button>
               );
             })}
-          </ul>
+          </div>
         </nav>
-        <main id="main" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" role="tabpanel">
+        <main id="main" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          <div role="tabpanel" id="editor-panel" aria-labelledby={`editor-tab-${tab}`}>
           {created && tab === "photos" && (
             <div role="status" className="mb-6 flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/10 p-4 text-sm">
               <PartyPopperIcon className="size-4 text-gold-deep" aria-hidden="true" />
@@ -155,6 +174,7 @@ function EditorBody({ tab, onTab, created }: { tab: EditorTab; onTab: (t: Editor
           {tab === "tours" && <ToursTab />}
           {tab === "people" && <PeopleTab />}
           {tab === "settings" && <SettingsTab />}
+          </div>
         </main>
       </div>
     </div>

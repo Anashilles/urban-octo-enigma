@@ -242,6 +242,8 @@ const en = {
     },
   },
   museum: {
+    canvasLabel: "3D museum. Walk with W A S D or the arrow keys, look around with the mouse, and press E to open the photo in front of you.",
+    previewLabel: "A preview of a gallery in Our Museum",
     loading: "Preparing the galleries…",
     betweenRooms: "Between rooms",
     exit: "Leave museum",

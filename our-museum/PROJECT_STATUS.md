@@ -34,7 +34,9 @@ What was actually executed (not just written):
 | Production build without any secrets present | Succeeds |
 | Docker: build `web`, `realtime`, `tools`; `docker compose up` on a fresh database | Migrations applied, seed ran, health checks green, sign-in, JPEG + HEIC upload, signed thumbnails, 3D museum rendered, WebSocket connected, cron endpoint authorised/refused correctly |
 
-The end-to-end suite covers: Arabic/RTL landing page; demo museum keyboard
+The end-to-end suite covers: automated accessibility checks (EN/AR) and
+keyboard navigation of the editor tabs; frame edit conflicts between two
+editors; Arabic/RTL landing page; demo museum keyboard
 walking, opening and closing a photograph; a full guided tour; the accessible
 list when WebGL is unavailable; sign-up → create museum → upload → hang →
 find the photos in 3D after a reload; avatar customisation; two browsers —
@@ -74,10 +76,11 @@ Listed plainly so nobody mistakes them for finished:
 7. **Real devices** — phones were tested with Playwright's mobile emulation,
    not on physical iOS/Android hardware. GPU performance on low-end phones is
    unknown.
-8. **Accessibility audit** — keyboard support, focus management, labels,
-   `aria-live` announcements, reduced-motion support, a skip link and a non-3D
-   photo list exist, but no screen-reader audit (VoiceOver/NVDA) or WCAG
-   conformance review has been done.
+8. **Accessibility** — an automated axe-core suite (WCAG 2.1 A/AA plus best
+   practices) passes with zero violations on every main page, all editor
+   tabs and the museum's panels and photo viewer, in English and Arabic.
+   Automated rules catch only part of the picture: no screen-reader session
+   (VoiceOver/NVDA/TalkBack) or formal WCAG conformance review has been done.
 9. **Large museums** — texture budgets and lazy loading are in place, but no
    load test with hundreds of photos or many simultaneous visitors was run.
 10. **Monitoring and backups** — JSON logs, health endpoints and the admin page

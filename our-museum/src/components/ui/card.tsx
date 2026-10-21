@@ -18,8 +18,10 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return <div data-slot="card-header" className={cn("grid gap-1.5 px-6", className)} {...props} />;
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"h3">) {
-  return <h3 data-slot="card-title" className={cn("font-display text-xl leading-tight", className)} {...props} />;
+/** Cards usually sit directly under a page's h1, so titles default to h2; pass level={3} inside a titled section. */
+function CardTitle({ className, level = 2, ...props }: React.ComponentProps<"h2"> & { level?: 2 | 3 }) {
+  const Heading = level === 3 ? "h3" : "h2";
+  return <Heading data-slot="card-title" className={cn("font-display text-xl leading-tight", className)} {...props} />;
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<"p">) {

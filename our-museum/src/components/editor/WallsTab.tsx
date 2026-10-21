@@ -58,7 +58,7 @@ function FrameProperties({ frame, onChange, onRemove }: { frame: SceneFrame; onC
 
   return (
     <div className="grid gap-5" data-testid="frame-properties">
-      <h3 className="font-display text-2xl">{t("editor.walls.frame")}</h3>
+      <h2 className="font-display text-2xl">{t("editor.walls.frame")}</h2>
       <div className="grid gap-2">
         <div className="flex justify-between text-sm">
           <Label htmlFor="fw">{t("editor.walls.width")}</Label>
@@ -368,9 +368,9 @@ export function WallsTab() {
       {editable && (
         <section aria-labelledby="library-title" className="grid gap-3">
           <div>
-            <h3 id="library-title" className="font-display text-2xl">
+            <h2 id="library-title" className="font-display text-2xl">
               {t("editor.walls.library")}
-            </h3>
+            </h2>
             <p className="text-sm text-muted-foreground">{t("editor.walls.libraryHint")}</p>
           </div>
           <ul className="flex gap-3 overflow-x-auto pb-2" data-testid="wall-library">

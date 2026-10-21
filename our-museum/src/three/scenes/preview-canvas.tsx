@@ -22,7 +22,7 @@ export default function PreviewCanvas() {
     useMuseumStore.getState().setScene(scene);
   }, [scene]);
   return (
-    <MuseumCanvas quality="medium" className="absolute inset-0 size-full touch-none" fov={62}>
+    <MuseumCanvas quality="medium" className="absolute inset-0 size-full touch-none" fov={62} label={t("museum.previewLabel")} interactive={false}>
       <MuseumWorld scene={scene} quality="medium" onInteractFrame={() => undefined} allowPointerLock={false} keyboard={false} />
     </MuseumCanvas>
   );

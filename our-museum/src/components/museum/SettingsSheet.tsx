@@ -35,7 +35,7 @@ export function SettingsSheet({
   const t = useT();
   const p = usePreferences();
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} modal={false}>
       <SheetContent side="end" tone="dark" modal={false} closeLabel={t("common.close")} className="overflow-y-auto" data-hud-panel data-testid="settings-sheet">
         <SheetHeader>
           <SheetTitle>{t("museum.settings.title")}</SheetTitle>

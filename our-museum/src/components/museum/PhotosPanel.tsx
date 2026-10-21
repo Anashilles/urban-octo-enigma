@@ -10,6 +10,7 @@ import type { SceneData } from "@/features/museums/scene-types";
 import { useI18n } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 import { photoImageUrl } from "./photo-urls";
+import { usePanelExitFocus } from "./focus";
 
 interface Props {
   scene: SceneData;
@@ -29,6 +30,7 @@ function photoDate(p: { takenAt: string | null; createdAt: string }) {
 
 /** In-museum collection browser: search, filter by collection, view, locate, go to or place a photo. */
 export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, onPlace, onToggleFavorite }: Props) {
+  const exitFocus = usePanelExitFocus();
   const { t, formatDate } = useI18n();
   const [query, setQuery] = useState("");
   const [collection, setCollection] = useState<string>("all");
@@ -54,8 +56,17 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
   const sequence = filtered.map((p) => p.id);
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="start" tone="dark" modal={false} closeLabel={t("common.close")} className="flex flex-col" data-hud-panel data-testid="photos-panel">
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} modal={false}>
+      <SheetContent
+        side="start"
+        tone="dark"
+        modal={false}
+        closeLabel={t("common.close")}
+        className="flex flex-col"
+        onCloseAutoFocus={exitFocus.onCloseAutoFocus}
+        data-hud-panel
+        data-testid="photos-panel"
+      >
         <SheetHeader>
           <SheetTitle>{t("museum.photos.title")}</SheetTitle>
           <SheetDescription className="sr-only">{t("museum.photos.search")}</SheetDescription>
@@ -108,7 +119,10 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
                           type="button"
                           className="aspect-square w-20 shrink-0 overflow-hidden rounded-lg focus-visible:ring-2 focus-visible:ring-gold"
                           style={{ background: photo.dominantColor }}
-                          onClick={() => onView(photo.id, sequence)}
+                          onClick={() => {
+                            exitFocus.elsewhere();
+                            onView(photo.id, sequence);
+                          }}
                           aria-label={`${t("museum.photos.view")} ${photo.title}`}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element -- signed short-lived URL */}
@@ -134,24 +148,36 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
                             {!frameId && ` ${t("museum.list.notHung")}`}
                           </p>
                           <div className="mt-2 flex flex-wrap gap-1.5">
-                            <Button size="sm" variant="glass" onClick={() => onView(photo.id, sequence)} data-testid="photo-view">
+                            <Button size="sm" variant="glass" onClick={() => {
+                            exitFocus.elsewhere();
+                            onView(photo.id, sequence);
+                          }} data-testid="photo-view">
                               <EyeIcon aria-hidden="true" />
                               {t("museum.photos.view")}
                             </Button>
                             {frameId && (
                               <>
-                                <Button size="sm" variant="glass" onClick={() => onLocate(frameId)} data-testid="photo-locate">
+                                <Button size="sm" variant="glass" onClick={() => {
+                                    exitFocus.toScene();
+                                    onLocate(frameId);
+                                  }} data-testid="photo-locate">
                                   <CompassIcon aria-hidden="true" />
                                   {t("museum.photos.locate")}
                                 </Button>
-                                <Button size="sm" variant="glass" onClick={() => onGoTo(frameId)} data-testid="photo-goto">
+                                <Button size="sm" variant="glass" onClick={() => {
+                                    exitFocus.toScene();
+                                    onGoTo(frameId);
+                                  }} data-testid="photo-goto">
                                   <MapPinIcon aria-hidden="true" />
                                   {t("museum.photos.goTo")}
                                 </Button>
                               </>
                             )}
                             {onPlace && (
-                              <Button size="sm" variant="glass" onClick={() => onPlace(photo.id)} data-testid="photo-place">
+                              <Button size="sm" variant="glass" onClick={() => {
+                                exitFocus.toScene();
+                                onPlace(photo.id);
+                              }} data-testid="photo-place">
                                 <FrameIcon aria-hidden="true" />
                                 {t("museum.photos.place")}
                               </Button>

@@ -9,12 +9,12 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="flex flex-col px-5 py-6 sm:px-10">
-        <div className="flex items-center justify-between">
+        <header className="flex items-center justify-between">
           <Link href="/" className="rounded-md" aria-label={t("common.appName")}>
             <Logo label={t("common.appName")} />
           </Link>
           <LanguageSwitcher />
-        </div>
+        </header>
         <main id="main" className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-12">
           {children}
         </main>

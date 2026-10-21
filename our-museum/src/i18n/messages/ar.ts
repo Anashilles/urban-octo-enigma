@@ -246,6 +246,8 @@ const ar: DeepStrings<Messages> = {
     },
   },
   museum: {
+    canvasLabel: "متحف ثلاثي الأبعاد. امشِ بمفاتيح W A S D أو الأسهم، وانظر حولك بالفأرة، واضغط E لفتح الصورة التي أمامك.",
+    previewLabel: "معاينة لقاعة في متحفنا",
     loading: "نجهّز القاعات…",
     betweenRooms: "بين القاعات",
     exit: "مغادرة المتحف",

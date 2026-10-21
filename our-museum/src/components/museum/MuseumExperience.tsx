@@ -121,7 +121,7 @@ export function MuseumExperience(props: MuseumExperienceProps) {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-ink" data-testid="museum-experience">
-      <MuseumCanvas quality={quality} className="absolute inset-0 size-full touch-none outline-none">
+      <MuseumCanvas quality={quality} className="absolute inset-0 size-full touch-none outline-none" label={t("museum.canvasLabel")}>
         <MuseumWorld
           scene={scene}
           quality={quality}

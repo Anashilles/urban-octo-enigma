@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/client";
 import { useMuseumStore } from "@/store/museum-store";
 import { goToTourStop, tourStops } from "./tour";
 import { photoImageUrl } from "./photo-urls";
+import { usePanelExitFocus } from "./focus";
 
 export interface TourHooks {
   /** Shown when the visitor may lead tours for everyone (live museums). */
@@ -26,14 +27,25 @@ export function ToursPanel({ scene, hooks }: { scene: SceneData; hooks: TourHook
   const { t } = useI18n();
   const panel = useMuseumStore((s) => s.panel);
   const setPanel = useMuseumStore((s) => s.setPanel);
+  const exitFocus = usePanelExitFocus();
   const start = (tourId: string, lead: boolean) => {
+    exitFocus.toScene();
     setPanel(null);
     if (lead && hooks.onLead) hooks.onLead(tourId);
     else goToTourStop(scene, { tourId, index: 0, mode: "solo" });
   };
   return (
     <Sheet open={panel === "tours"} onOpenChange={(o) => !o && setPanel(null)} modal={false}>
-      <SheetContent side="start" tone="dark" modal={false} closeLabel={t("common.close")} className="overflow-y-auto" data-hud-panel data-testid="tours-panel">
+      <SheetContent
+        side="start"
+        tone="dark"
+        modal={false}
+        closeLabel={t("common.close")}
+        className="overflow-y-auto"
+        onCloseAutoFocus={exitFocus.onCloseAutoFocus}
+        data-hud-panel
+        data-testid="tours-panel"
+      >
         <SheetHeader>
           <SheetTitle>{t("museum.tours.title")}</SheetTitle>
           <SheetDescription className="text-ivory/60">{t("museum.tours.description")}</SheetDescription>

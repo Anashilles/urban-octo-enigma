@@ -23,7 +23,7 @@ export default function Preview3D({ roomId, wallKey }: { roomId: string; wallKey
   if (!spawned) return null;
   return (
     <div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-border bg-ink" data-testid="editor-preview-3d">
-      <MuseumCanvas quality="medium" className="absolute inset-0 size-full touch-none">
+      <MuseumCanvas quality="medium" className="absolute inset-0 size-full touch-none" label={t("museum.canvasLabel")}>
         <MuseumWorld scene={spawned} quality="medium" onInteractFrame={() => undefined} />
       </MuseumCanvas>
       <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs text-ivory/75">{t("museum.clickToLook")}</p>

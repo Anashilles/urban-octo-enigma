@@ -110,7 +110,7 @@ export function ToursTab() {
             <li key={tour.id}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle level={3} className="flex items-center gap-2">
                     <RouteIcon className="size-4 text-gold-deep" aria-hidden="true" />
                     {tour.name}
                   </CardTitle>
@@ -221,7 +221,7 @@ export function ToursTab() {
 
           <Card className="lg:sticky lg:top-24 lg:self-start">
             <CardHeader>
-              <CardTitle>{t("editor.tours.addStops")}</CardTitle>
+              <CardTitle level={3}>{t("editor.tours.addStops")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4" data-testid="tour-frame-picker">

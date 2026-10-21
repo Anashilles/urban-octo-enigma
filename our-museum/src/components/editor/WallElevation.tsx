@@ -185,7 +185,7 @@ export function WallElevation(props: Props) {
         />
         {/* Eye level */}
         <line x1={-L / 2} x2={L / 2} y1={y(PLACEMENT_LIMITS.eyeLevel)} y2={y(PLACEMENT_LIMITS.eyeLevel)} stroke="#c6a66a" strokeWidth={0.008} strokeDasharray="0.08 0.06" />
-        <text x={-L / 2 + 0.06} y={y(PLACEMENT_LIMITS.eyeLevel) - 0.04} fontSize={0.09} fill="#a9884d">
+        <text x={-L / 2 + 0.06} y={y(PLACEMENT_LIMITS.eyeLevel) - 0.04} fontSize={0.09} fill="#7f622d">
           {t("editor.walls.eyeLevel")}
         </text>
         {/* Doorways */}
