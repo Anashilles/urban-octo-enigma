@@ -28,7 +28,7 @@ async function post(path: string, body: unknown) {
   }
 }
 
-export type ChangeScope = "layout" | "photos" | "museum" | "members" | "tours";
+export type ChangeScope = "layout" | "photos" | "museum" | "members" | "tours" | "comments";
 
 /** Tells connected visitors that persisted museum data changed (they refetch it). */
 export function notifyMuseumChanged(museumId: string, scope: ChangeScope, actorId?: string) {

@@ -27,6 +27,8 @@ export interface ScenePhoto {
   favorite: boolean;
   reactions: Record<string, number>;
   myReactions: string[];
+  /** Number of comments (0 when comments are turned off). */
+  commentCount: number;
 }
 
 export interface SceneWall {
@@ -93,6 +95,8 @@ export interface SceneData {
     privacy: PrivacyConfig;
     layoutVersion: number;
     coverPhotoId: string | null;
+    /** Number of guestbook entries (0 when comments are turned off). */
+    guestbookCount: number;
   };
   theme: ResolvedTheme;
   rooms: SceneRoom[];

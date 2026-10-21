@@ -137,7 +137,7 @@ export const clientMessageSchema = z.discriminatedUnion("t", [
 export type ClientMessage = z.infer<typeof clientMessageSchema>;
 export type VoiceSignal = Extract<ClientMessage, { t: "voice.signal" }>["data"];
 
-export type ChangeScope = "layout" | "photos" | "museum" | "members" | "tours";
+export type ChangeScope = "layout" | "photos" | "museum" | "members" | "tours" | "comments";
 
 export type ServerMessage =
   | { t: "welcome"; self: Peer; peers: Peer[]; shared: SharedState | null; tour: TourState | null; now: number }
@@ -180,7 +180,7 @@ export const internalBroadcastSchema = z.object({
   museumId: id,
   event: z.object({
     type: z.literal("museum.changed"),
-    scope: z.enum(["layout", "photos", "museum", "members", "tours"]),
+    scope: z.enum(["layout", "photos", "museum", "members", "tours", "comments"]),
     actorId: id.nullable(),
   }),
 });

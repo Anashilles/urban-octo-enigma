@@ -6,7 +6,7 @@ import type { SceneData } from "@/features/museums/scene-types";
 import { setInputEnabled } from "@/three/controls/input";
 import type { PlayerPose } from "@/three/runtime";
 
-export type Panel = "collections" | "people" | "settings" | "help" | "timeline" | "tours" | "invite" | "room" | null;
+export type Panel = "collections" | "people" | "settings" | "help" | "timeline" | "tours" | "invite" | "room" | "guestbook" | null;
 
 export interface ViewerState {
   photoId: string;
@@ -44,6 +44,8 @@ interface MuseumUiState {
   fadeKey: number;
   currentRoomId: string | null;
   tour: ActiveTour | null;
+  /** The comments panel beside the photo viewer. */
+  commentsOpen: boolean;
   setScene: (scene: SceneData) => void;
   patchScene: (fn: (scene: SceneData) => SceneData) => void;
   setFocused: (id: string | null) => void;
@@ -58,6 +60,7 @@ interface MuseumUiState {
   flashFade: () => void;
   setCurrentRoom: (id: string | null) => void;
   setTour: (tour: ActiveTour | null) => void;
+  setCommentsOpen: (open: boolean) => void;
 }
 
 function syncInput(s: Pick<MuseumUiState, "viewer" | "inputBlockers">) {
@@ -76,6 +79,7 @@ export const useMuseumStore = create<MuseumUiState>()((set, get) => ({
   fadeKey: 0,
   currentRoomId: null,
   tour: null,
+  commentsOpen: false,
   setScene: (scene) => set({ scene }),
   patchScene: (fn) => {
     const s = get().scene;
@@ -90,7 +94,7 @@ export const useMuseumStore = create<MuseumUiState>()((set, get) => ({
     if (document.pointerLockElement) document.exitPointerLock();
   },
   closeViewer: () => {
-    set({ viewer: null });
+    set({ viewer: null, commentsOpen: false });
     syncInput({ viewer: null, inputBlockers: get().inputBlockers });
   },
   setPanel: (panel) => set({ panel }),
@@ -111,6 +115,7 @@ export const useMuseumStore = create<MuseumUiState>()((set, get) => ({
   setReturnPose: (returnPose) => set({ returnPose }),
   flashFade: () => set((s) => ({ fadeKey: s.fadeKey + 1 })),
   setTour: (tour) => set({ tour }),
+  setCommentsOpen: (commentsOpen) => set({ commentsOpen }),
   setCurrentRoom: (currentRoomId) => {
     if (get().currentRoomId !== currentRoomId) set({ currentRoomId });
   },

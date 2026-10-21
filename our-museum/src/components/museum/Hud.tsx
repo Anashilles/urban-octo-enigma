@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore, type ReactNode } from "react";
 import {
   ArrowLeftIcon,
+  BookOpenTextIcon,
   CircleHelpIcon,
   EllipsisIcon,
   ImagesIcon,
@@ -175,6 +176,11 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
+                {scene.museum.privacy.commentsEnabled && (
+                  <DropdownMenuItem onSelect={() => togglePanel("guestbook")} data-testid="hud-guestbook">
+                    <BookOpenTextIcon /> {t("museum.hud.guestbook")}
+                  </DropdownMenuItem>
+                )}
                 {scene.tours.length > 0 && (
                   <DropdownMenuItem onSelect={() => togglePanel("tours")} data-testid="hud-tours">
                     <RouteIcon /> {t("museum.tours.title")}
@@ -193,6 +199,11 @@ export function Hud({ scene, exitHref, onOpenFrame, onReturn, toolbar, status, b
             </DropdownMenu>
           ) : (
             <>
+              {scene.museum.privacy.commentsEnabled && (
+                <HudIconButton label={t("museum.hud.guestbook")} onClick={() => togglePanel("guestbook")} active={panel === "guestbook"} testId="hud-guestbook">
+                  <BookOpenTextIcon />
+                </HudIconButton>
+              )}
               {scene.tours.length > 0 && (
                 <HudIconButton label={t("museum.tours.title")} onClick={() => togglePanel("tours")} active={panel === "tours"} testId="hud-tours">
                   <RouteIcon />

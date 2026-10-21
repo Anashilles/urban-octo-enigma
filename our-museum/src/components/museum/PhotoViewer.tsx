@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import type { ScenePhoto } from "@/features/museums/scene-types";
 import { useI18n } from "@/i18n/client";
 import { cn } from "@/lib/utils";
+import { isTypingTarget } from "@/three/controls/input";
 import { photoImageUrl } from "./photo-urls";
 
 const MIN_ZOOM = 1;
@@ -42,6 +43,10 @@ interface Props {
   onViewChange?: (view: SharedView) => void;
   /** Drawn over the photograph (floating reactions). */
   overlay?: ReactNode;
+  /** A side panel beside the photograph (comments). */
+  aside?: ReactNode;
+  /** Lets an open side panel take Escape first (call preventDefault to keep the viewer open). */
+  onEscapeKeyDown?: (e: KeyboardEvent) => void;
 }
 
 export interface SharedView {
@@ -51,7 +56,7 @@ export interface SharedView {
 }
 
 export function PhotoViewer(props: Props) {
-  const { photos, sequence, photoId, shared, onNavigate, onClose, actions, sharedBanner, navigationLocked = false, syncedView, onViewChange, overlay } = props;
+  const { photos, sequence, photoId, shared, onNavigate, onClose, actions, sharedBanner, navigationLocked = false, syncedView, onViewChange, overlay, aside, onEscapeKeyDown } = props;
   const { t, dir, formatDate } = useI18n();
   const photo = photos.get(photoId);
   const index = Math.max(0, sequence.indexOf(photoId));
@@ -123,7 +128,7 @@ export function PhotoViewer(props: Props) {
   );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (navigationLocked) return;
+    if (navigationLocked || isTypingTarget(e.target)) return;
     const nextKey = dir === "rtl" ? "ArrowLeft" : "ArrowRight";
     const prevKey = dir === "rtl" ? "ArrowRight" : "ArrowLeft";
     if (e.key === nextKey) {
@@ -201,8 +206,10 @@ export function PhotoViewer(props: Props) {
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ink/92 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed inset-0 z-50 flex flex-col text-ivory outline-none"
+          // On wider screens an open side panel (comments) gets its own column instead of covering the controls.
+          className="fixed inset-0 z-50 flex flex-col text-ivory outline-none sm:has-[[data-viewer-aside]]:pe-96"
           onKeyDown={onKeyDown}
+          onEscapeKeyDown={onEscapeKeyDown}
           aria-describedby="viewer-caption"
           data-testid="photo-viewer"
         >
@@ -323,6 +330,7 @@ export function PhotoViewer(props: Props) {
             {actions && <div className="mt-1 flex flex-wrap items-center justify-center gap-2">{actions}</div>}
             <p className="hidden text-xs text-ivory/60 sm:block">{t("museum.viewer.keyboardHint")}</p>
           </footer>
+          {aside}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

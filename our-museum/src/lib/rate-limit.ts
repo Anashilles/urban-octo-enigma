@@ -74,6 +74,7 @@ export const RATE_RULES = {
   invitationRedeem: { capacity: 10, refillPerSecond: 1 / 20 },
   realtimeTicket: { capacity: 20, refillPerSecond: 0.5 },
   email: { capacity: 5, refillPerSecond: 1 / 60 },
+  comment: { capacity: 20, refillPerSecond: 1 / 6 },
 } satisfies Record<string, RateLimitRule>;
 export type RuleName = keyof typeof RATE_RULES;
 

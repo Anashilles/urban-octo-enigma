@@ -23,7 +23,9 @@ export type AuditEventType =
   | "member.roleChanged"
   | "member.left"
   | "tour.saved"
-  | "tour.deleted";
+  | "tour.deleted"
+  | "comment.removed"
+  | "guestbook.removed";
 
 /**
  * Appends to the audit log. Metadata must be small and must never contain

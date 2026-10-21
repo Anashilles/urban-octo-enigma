@@ -29,7 +29,8 @@ export async function signedPhotoUrls(p: { thumbnailKey: string; mediumKey: stri
  */
 export async function getScene(user: { id: string; displayName: string; isAnonymous: boolean }, museumId: string, opts: { recordVisit?: boolean } = {}): Promise<SceneData> {
   const { museum, role } = await requireMuseumAccess(user.id, museumId, "museum.view");
-  const [owner, rooms, frames, photos, collections, tours, reactions, avatar] = await Promise.all([
+  const commentsOn = resolvePrivacy(museum.privacy).commentsEnabled;
+  const [owner, rooms, frames, photos, collections, tours, reactions, avatar, commentCounts, guestbookCount] = await Promise.all([
     prisma.user.findUnique({ where: { id: museum.ownerId }, select: { displayName: true } }),
     prisma.museumRoom.findMany({ where: { museumId }, orderBy: { sortOrder: "asc" }, include: { walls: true } }),
     prisma.photoFrame.findMany({ where: { museumId }, include: { wall: { select: { wallKey: true } } }, orderBy: { createdAt: "asc" } }),
@@ -53,7 +54,10 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
     }),
     prisma.photoReaction.findMany({ where: { photo: { museumId } }, select: { photoId: true, emoji: true, userId: true } }),
     getAvatar(user.id),
+    commentsOn ? prisma.photoComment.groupBy({ by: ["photoId"], where: { museumId }, _count: { _all: true } }) : [],
+    commentsOn ? prisma.guestbookEntry.count({ where: { museumId } }) : 0,
   ]);
+  const commentsByPhoto = new Map(commentCounts.map((c) => [c.photoId, c._count._all]));
 
   const reactionCounts = new Map<string, Record<string, number>>();
   const myReactions = new Map<string, string[]>();
@@ -80,6 +84,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
       favorite: p.favorites.length > 0,
       reactions: reactionCounts.get(p.id) ?? {},
       myReactions: myReactions.get(p.id) ?? [],
+      commentCount: commentsByPhoto.get(p.id) ?? 0,
     })),
   );
 
@@ -133,6 +138,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
       privacy,
       layoutVersion: museum.layoutVersion,
       coverPhotoId: museum.coverPhotoId,
+      guestbookCount,
     },
     theme: resolveTheme(template.theme, museum.theme),
     rooms: sceneRooms,

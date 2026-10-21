@@ -101,6 +101,7 @@ export function SettingsTab() {
               ["allowAnonymousGuests", "editor.settings.anonymousGuests"],
               ["voiceChatEnabled", "editor.settings.voice"],
               ["reactionsEnabled", "editor.settings.reactions"],
+              ["commentsEnabled", "editor.settings.comments"],
             ] as const
           ).map(([key, label]) => (
             <div key={key} className="flex items-center justify-between gap-4">

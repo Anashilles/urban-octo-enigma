@@ -18,6 +18,7 @@ stack has been built and run locally (see [Verification](#verification)).
 | 3 | Avatars: create, customise, save, animate; first/third person | Done |
 | 4 | Invitations, roles, presence, synced movement, Look Together (synced photo, navigation, zoom/pan), go-to-person, reactions | Done |
 | 5 | Voice chat (spatial), guided tours (solo and led live), ambient sound, phone layout, admin diagnostics, deployment | Done, with the gaps listed below |
+| + | Comments on photographs and a museum guestbook (live, moderated, switchable) | Done |
 
 ## Verification
 
@@ -26,11 +27,11 @@ What was actually executed (not just written):
 | Check | Result |
 | --- | --- |
 | TypeScript (`tsc --noEmit`), ESLint | Clean |
-| Vitest unit + integration (real PostgreSQL) | 124 passed in 16 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
+| Vitest unit + integration (real PostgreSQL) | 138 passed in 18 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
 | S3 driver against an S3-compatible server (moto, an AWS S3 emulator) | 3 passed (opt-in test, `S3_TEST_ENDPOINT`) |
-| Playwright end to end (headless Chromium, software WebGL) | 8 passed (desktop + mobile projects) |
+| Playwright end to end (headless Chromium, software WebGL) | 13 passed, 1 opt-in skipped (TURN relay) — desktop + mobile projects |
 | `npm audit --omit=dev` | 0 vulnerabilities |
-| GitHub Actions (`.github/workflows/our-museum.yml`) | Green: lint, typecheck, 124 tests against a PostgreSQL service, production build |
+| GitHub Actions (`.github/workflows/our-museum.yml`) | Green: lint, typecheck, unit + integration tests against a PostgreSQL service, production build, Playwright suite |
 | Production build without any secrets present | Succeeds |
 | Docker: build `web`, `realtime`, `tools`; `docker compose up` on a fresh database | Migrations applied, seed ran, health checks green, sign-in, JPEG + HEIC upload, signed thumbnails, 3D museum rendered, WebSocket connected, cron endpoint authorised/refused correctly |
 
@@ -89,8 +90,8 @@ Listed plainly so nobody mistakes them for finished:
 10. **Monitoring and backups** — JSON logs, health endpoints and the admin page
     only; no error-tracking service, alerting or automated backups.
 11. **Content features not built** — narrated (audio) tours, video uploads,
-    comments/guestbook, importing from photo services, custom 3D model
-    upload for avatars or decor, and museum export/download.
+    importing from photo services, custom 3D model upload for avatars or
+    decor, and museum export/download.
 12. **CI coverage** — GitHub Actions runs lint, typecheck, unit +
     integration tests, a secret-free build and the Playwright suite on every
     push. The opt-in checks (S3, TURN relay) need external services and run

@@ -65,6 +65,9 @@ export interface MuseumExperienceProps {
   viewerSyncedView?: SharedView | null;
   onViewerViewChange?: (view: SharedView) => void;
   viewerOverlay?: (photoId: string) => ReactNode;
+  /** Side panel inside the photo viewer (comments). */
+  viewerAside?: (photoId: string) => ReactNode;
+  onViewerEscape?: (e: KeyboardEvent) => void;
   /** Live museums: lead tours for everyone and follow a guide. */
   tourHooks?: TourHooks;
 }
@@ -236,6 +239,8 @@ export function MuseumExperience(props: MuseumExperienceProps) {
           syncedView={props.viewerSyncedView}
           onViewChange={props.onViewerViewChange}
           overlay={props.viewerOverlay?.(viewerPhotoId)}
+          aside={props.viewerAside?.(viewerPhotoId)}
+          onEscapeKeyDown={props.onViewerEscape}
         />
       )}
     </div>

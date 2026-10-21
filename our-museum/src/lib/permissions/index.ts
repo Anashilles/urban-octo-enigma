@@ -32,6 +32,8 @@ export const ACTIONS = [
   "tour.present",
   "photo.react",
   "voice.join",
+  "comment.write",
+  "comment.moderate",
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -45,6 +47,7 @@ const OWNER_ONLY: Action[] = [
   "member.remove",
   "member.changeRole",
   "shared.manage",
+  "comment.moderate",
 ];
 
 const EDITOR: Action[] = [
@@ -64,9 +67,10 @@ const EDITOR: Action[] = [
   "tour.present",
   "photo.react",
   "voice.join",
+  "comment.write",
 ];
 
-const VISITOR: Action[] = ["museum.view", "photo.react", "voice.join", "shared.start"];
+const VISITOR: Action[] = ["museum.view", "photo.react", "voice.join", "shared.start", "comment.write"];
 
 const TABLE: Record<Role, ReadonlySet<Action>> = {
   OWNER: new Set<Action>([...EDITOR, ...OWNER_ONLY]),

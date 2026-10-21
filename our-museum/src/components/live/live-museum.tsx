@@ -25,6 +25,7 @@ import { FloatingReactions, NameTags, PeopleSheet, TourBanner, PresenceButton, S
 import { useRealtime } from "./use-realtime";
 import { useVoice } from "./use-voice";
 import { VoiceButton, VoiceSection } from "./VoiceUI";
+import { CommentsButton, GuestbookPanel, PhotoComments } from "./Comments";
 import type { VoiceManager } from "@/features/voice/voice-manager";
 
 export default function LiveMuseum({ initialScene }: { initialScene: SceneData }) {
@@ -135,6 +136,8 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
   if (!scene || scene.museum.id !== museumId) return null;
   const canEdit = scene.viewer.permissions["frame.place"];
   const perms = scene.viewer.permissions;
+  const comments = scene.museum.privacy.commentsEnabled;
+  const photoById = (id: string) => scene.photos.find((p) => p.id === id);
 
   return (
     <MuseumExperience
@@ -158,15 +161,33 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
           <RemoteAvatars />
         </>
       }
-      viewerActions={(photoId) => (
-        <ViewerLiveActions
-          photoId={photoId}
-          sequence={viewerSequence ?? [photoId]}
-          actions={realtime}
-          canShare={perms["shared.start"]}
-          canReact={perms["photo.react"] && scene.museum.privacy.reactionsEnabled}
-        />
-      )}
+      viewerActions={(photoId) => {
+        const photo = photoById(photoId);
+        return (
+          <>
+            <ViewerLiveActions
+              photoId={photoId}
+              sequence={viewerSequence ?? [photoId]}
+              actions={realtime}
+              canShare={perms["shared.start"]}
+              canReact={perms["photo.react"] && scene.museum.privacy.reactionsEnabled}
+            />
+            {comments && photo && <CommentsButton photo={photo} />}
+          </>
+        );
+      }}
+      viewerAside={(photoId) => {
+        const photo = photoById(photoId);
+        return comments && photo ? <PhotoComments museumId={museumId} photo={photo} canWrite={perms["comment.write"]} /> : null;
+      }}
+      onViewerEscape={(e) => {
+        // Escape closes the comments first, then the viewer.
+        const s = useMuseumStore.getState();
+        if (s.commentsOpen) {
+          e.preventDefault();
+          s.setCommentsOpen(false);
+        }
+      }}
       sharedBanner={<ViewerSharedBar actions={realtime} />}
       viewerLocked={isFollower}
       viewerSyncedView={isFollower && shared ? { zoom: shared.zoom, panX: shared.panX, panY: shared.panY } : null}
@@ -217,6 +238,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
           <NameTags scene={scene} />
           <SharedBanner scene={scene} actions={realtime} />
           <TourBanner scene={scene} actions={realtime} />
+          {comments && <GuestbookPanel scene={scene} canWrite={perms["comment.write"]} />}
           <PeopleSheet scene={scene} actions={realtime} voiceSection={<VoiceSection voice={voice} enabled={voiceAllowed} />} />
           {scene.frames.length === 0 && canEdit && !placing && (
             <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4">

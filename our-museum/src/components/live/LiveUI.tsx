@@ -54,7 +54,6 @@ export function PresenceButton() {
       variant="glass"
       className={cn("h-10 gap-1.5 rounded-full px-2.5 sm:gap-2 sm:px-3", panel === "people" && "bg-white/15 ring-1 ring-gold/60")}
       onClick={() => setPanel(panel === "people" ? null : "people")}
-      aria-label={label}
       aria-pressed={panel === "people"}
       data-testid="presence-button"
       data-status={status}
@@ -68,7 +67,11 @@ export function PresenceButton() {
           </span>
         ))}
       </span>
-      <span className="text-sm tabular-nums">{status === "online" ? others.length + 1 : ""}</span>
+      {/* The count is visual shorthand; the spoken name is the full sentence. */}
+      <span className="text-sm tabular-nums" aria-hidden="true">
+        {status === "online" ? others.length + 1 : ""}
+      </span>
+      <span className="sr-only">{label}</span>
       <span className={cn("size-2 rounded-full", STATUS_DOT[status])} aria-hidden="true" />
     </Button>
   );

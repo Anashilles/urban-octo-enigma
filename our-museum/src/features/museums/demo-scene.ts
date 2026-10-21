@@ -65,6 +65,7 @@ export function buildDemoScene(templateId: TemplateId, t: Translator, photoCount
       favorite: false,
       reactions: {},
       myReactions: [],
+      commentCount: 0,
     };
   });
 
@@ -120,9 +121,10 @@ export function buildDemoScene(templateId: TemplateId, t: Translator, photoCount
       ownerId: null,
       ownerName: t("common.appName"),
       themeOverrides: {},
-      privacy: { guestsCanStartSharedViewing: true, allowAnonymousGuests: false, voiceChatEnabled: false, reactionsEnabled: false },
+      privacy: { guestsCanStartSharedViewing: true, allowAnonymousGuests: false, voiceChatEnabled: false, reactionsEnabled: false, commentsEnabled: false },
       layoutVersion: 1,
       coverPhotoId: null,
+      guestbookCount: 0,
     },
     theme: template.theme,
     rooms: sceneRooms,

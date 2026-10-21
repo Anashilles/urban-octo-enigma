@@ -43,6 +43,8 @@ model User {
   reactions          PhotoReaction[]
   pendingUploads     PendingUpload[]
   createdTours       GuidedTour[]       @relation("TourCreator")
+  comments           PhotoComment[]
+  guestbookEntries   GuestbookEntry[]
 
   @@map("users")
 }
@@ -143,6 +145,8 @@ model Museum {
   visits         MuseumVisit[]
   pendingUploads PendingUpload[]
   tours          GuidedTour[]
+  comments       PhotoComment[]
+  guestbook      GuestbookEntry[]
 
   @@index([ownerId])
   @@map("museums")
@@ -237,6 +241,7 @@ model Photo {
   collections CollectionPhoto[]
   favorites   PhotoFavorite[]
   reactions   PhotoReaction[]
+  comments    PhotoComment[]
   coverOf     Museum?           @relation("MuseumCover")
 
   @@index([museumId, createdAt])
@@ -497,4 +502,37 @@ model MuseumEvent {
   @@index([museumId, createdAt])
   @@index([eventType, createdAt])
   @@map("museum_events")
+}
+
+/// A visitor's note on a photograph. Removed with the photo, the museum or the author's account.
+model PhotoComment {
+  id        String   @id @default(cuid(2))
+  museumId  String
+  museum    Museum   @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  photoId   String
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([photoId, createdAt])
+  @@index([museumId])
+  @@index([authorId])
+  @@map("photo_comments")
+}
+
+/// A message left for the whole museum ("visitors' book").
+model GuestbookEntry {
+  id        String   @id @default(cuid(2))
+  museumId  String
+  museum    Museum   @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([museumId, createdAt])
+  @@index([authorId])
+  @@map("guestbook_entries")
 }

@@ -79,6 +79,16 @@ everyone in the museum to refetch the scene.
 Frame placement is validated on the server (`src/features/photo-placement`):
 inside the wall, clear of doorways and other frames, within size limits.
 
+## Comments and guestbook
+
+`src/services/comment-service.ts` stores comments per photo and a guestbook per
+museum. Every member may write (`comment.write`); authors delete their own,
+the owner may remove anything (`comment.moderate`, audited). The owner's
+`commentsEnabled` privacy switch hides and refuses both while keeping existing
+notes. Changes are broadcast with the `comments` scope; the scene carries
+counts (`photo.commentCount`, `museum.guestbookCount`), and an open comments
+panel or guestbook reloads when its count changes.
+
 ## 3D runtime
 
 React Three Fiber renders a single canvas (`src/three/scenes/MuseumCanvas.tsx`).

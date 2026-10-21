@@ -73,6 +73,8 @@ export const privacySchema = z.object({
   allowAnonymousGuests: z.boolean().default(true),
   voiceChatEnabled: z.boolean().default(true),
   reactionsEnabled: z.boolean().default(true),
+  /** Comments on photographs and the museum's guestbook. */
+  commentsEnabled: z.boolean().default(true),
 });
 export type PrivacyConfig = z.infer<typeof privacySchema>;
 
