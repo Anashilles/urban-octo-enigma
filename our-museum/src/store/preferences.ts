@@ -24,6 +24,8 @@ export interface PreferencesState {
   tutorialSeen: boolean;
   /** Open the photograph automatically when someone starts Look Together. */
   autoFollowShared: boolean;
+  /** Start a tour stop's recorded narration as soon as you arrive. */
+  autoPlayNarration: boolean;
   set: (patch: Partial<Omit<PreferencesState, "set" | "reset">>) => void;
   reset: () => void;
 }
@@ -44,6 +46,7 @@ const defaults = () => ({
   ambientVolume: 0.4,
   tutorialSeen: false,
   autoFollowShared: true,
+  autoPlayNarration: true,
 });
 
 export const usePreferences = create<PreferencesState>()(

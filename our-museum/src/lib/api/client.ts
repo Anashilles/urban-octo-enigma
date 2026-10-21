@@ -18,6 +18,8 @@ export async function api<T = unknown>(
   init: Omit<RequestInit, "body"> & { body?: unknown } = {},
 ): Promise<T> {
   const { body, headers, ...rest } = init;
+  // Blobs (recordings) are sent as they are; the browser sets their content type.
+  const raw = typeof Blob !== "undefined" && body instanceof Blob;
   let res: Response;
   try {
     res = await fetch(path, {
@@ -25,10 +27,10 @@ export async function api<T = unknown>(
       ...rest,
       headers: {
         accept: "application/json",
-        ...(body !== undefined ? { "content-type": "application/json" } : {}),
+        ...(body !== undefined && !raw ? { "content-type": "application/json" } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : raw ? (body as Blob) : JSON.stringify(body),
     });
   } catch {
     throw new ApiError("NETWORK", "Network error", 0);

@@ -89,14 +89,37 @@ notes. Changes are broadcast with the `comments` scope; the scene carries
 counts (`photo.commentCount`, `museum.guestbookCount`), and an open comments
 panel or guestbook reloads when its count changes.
 
+## Narrated tours
+
+A tour stop can carry a recorded voice narration (`tour_narrations`, keyed by
+tour and frame so it survives the tour's stops being rewritten on save). The
+editor records with `MediaRecorder` (WebM/Opus, Ogg or MP4 depending on the
+browser, 64 kbit/s, stopped automatically at 3 minutes), lets the author
+listen back, then `PUT`s the raw bytes to
+`/api/museums/:id/tours/:tourId/narrations/:frameId` (`tour.manage`,
+upload rate limit, 5 MB cap enforced while reading). The server identifies
+the container by its magic bytes, stores it privately and exposes it in the
+scene as a signed URL with its duration. The local storage route answers
+byte-range requests (`206`), which Safari needs for media, and the CSP's
+`media-src` includes the S3 origin when one is configured.
+
+In the museum, `StopNarration` plays the stop's narration on arrival (a
+per-device setting turns autoplay off; if the browser blocks autoplay the play
+button remains) and stops when the visitor moves on. In a live tour each
+follower's browser plays it locally when the leader changes stop. Narrations
+whose stop disappears (tour edited or deleted, frame, photo or room removed)
+are swept by `cleanupOrphanNarrations`, which runs after those changes and in
+the maintenance cron, and their files go through the deletion queue.
+
 ## Export
 
 `GET /api/museums/:id/export` (owner only, `museum.export`, rate-limited)
 streams a ZIP built with `fflate`: the sanitised originals under `photos/`,
-`museum.json` (format `our-museum-export`, version 1) and `index.html`, a
-self-contained gallery with no scripts and a CSP that only allows the bundled
-images. Files are read one at a time as the download is consumed, and a
-missing photo file is reported in the manifest instead of failing the export.
+tour narrations under `narrations/`, `museum.json` (format
+`our-museum-export`, version 1) and `index.html`, a self-contained gallery
+with no scripts and a CSP that only allows the bundled images and audio.
+Files are read one at a time as the download is consumed, and a missing file
+is reported in the manifest instead of failing the export.
 
 ## 3D runtime
 

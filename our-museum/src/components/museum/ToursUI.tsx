@@ -1,15 +1,17 @@
 "use client";
 
-import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, FlagIcon, RouteIcon, UsersRoundIcon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, EyeIcon, FlagIcon, MicIcon, RouteIcon, UsersRoundIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { SceneData } from "@/features/museums/scene-types";
 import { useI18n } from "@/i18n/client";
+import { cn } from "@/lib/utils";
 import { useMuseumStore } from "@/store/museum-store";
 import { goToTourStop, tourStops } from "./tour";
 import { photoImageUrl } from "./photo-urls";
 import { usePanelExitFocus } from "./focus";
+import { StopNarration } from "./StopNarration";
 
 export interface TourHooks {
   /** Shown when the visitor may lead tours for everyone (live museums). */
@@ -66,7 +68,15 @@ export function ToursPanel({ scene, hooks }: { scene: SceneData; hooks: TourHook
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-display text-xl leading-tight">{tour.name}</h3>
-                    <p className="text-xs text-ivory/60">{t("museum.tours.stops", { count: stops.length })}</p>
+                    <p className="flex flex-wrap items-center gap-x-2 text-xs text-ivory/60">
+                      {t("museum.tours.stops", { count: stops.length })}
+                      {stops.some((s) => s.narration) && (
+                        <span className="inline-flex items-center gap-1 text-gold" data-testid="tour-narrated">
+                          <MicIcon className="size-3" aria-hidden="true" />
+                          {t("museum.tours.narrated")}
+                        </span>
+                      )}
+                    </p>
                     {tour.description && <p className="mt-1 line-clamp-2 text-sm text-ivory/70">{tour.description}</p>}
                   </div>
                 </div>
@@ -97,7 +107,7 @@ export function TourCard({ scene, hooks, onView }: { scene: SceneData; hooks: To
   const active = useMuseumStore((s) => s.tour);
   const viewerOpen = useMuseumStore((s) => Boolean(s.viewer));
   const setTour = useMuseumStore((s) => s.setTour);
-  if (!active || viewerOpen) return null;
+  if (!active) return null;
   const tour = scene.tours.find((x) => x.id === active.tourId);
   if (!tour) return null;
   const stops = tourStops(scene, tour);
@@ -124,7 +134,8 @@ export function TourCard({ scene, hooks, onView }: { scene: SceneData; hooks: To
   const Next = dir === "rtl" ? ChevronLeftIcon : ChevronRightIcon;
   return (
     // Phones: under the top bar; larger screens: bottom corner, clear of the photo in front.
-    <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-3 sm:top-auto sm:bottom-4 sm:justify-start sm:px-4">
+    // Hidden (not unmounted) while a photograph is open, so its narration keeps playing.
+    <div className={cn("pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-3 sm:top-auto sm:bottom-4 sm:justify-start sm:px-4", viewerOpen && "hidden")}>
       <section
         className="glass-dark pointer-events-auto grid w-full max-w-md gap-3 rounded-2xl border border-gold/30 p-4 text-ivory shadow-xl sm:max-w-sm"
         aria-label={tour.name}
@@ -151,6 +162,7 @@ export function TourCard({ scene, hooks, onView }: { scene: SceneData; hooks: To
           <h3 className="font-display text-2xl leading-tight">{photo?.title || t("museum.prompt.untitled")}</h3>
           {stop.note && <p className="mt-1 text-sm leading-relaxed whitespace-pre-line text-ivory/80">{stop.note}</p>}
         </div>
+        {stop.narration && <StopNarration key={`${tour.id}:${stop.frameId}:${stop.narration.recordedAt}`} narration={stop.narration} />}
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="glass" onClick={() => frame && onView(frame.id)} data-testid="tour-view">
             <EyeIcon aria-hidden="true" />

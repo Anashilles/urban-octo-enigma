@@ -70,7 +70,14 @@ export interface SceneTour {
   id: string;
   name: string;
   description: string;
-  stops: Array<{ id: string; frameId: string; note: string }>;
+  stops: Array<{ id: string; frameId: string; note: string; narration: SceneNarration | null }>;
+}
+
+/** A recorded voice note for one stop, served through a short-lived signed URL. */
+export interface SceneNarration {
+  url: string;
+  durationMs: number;
+  recordedAt: string;
 }
 
 export interface SceneViewer {

@@ -103,6 +103,9 @@ export function SettingsSheet({
               </Label>
               <Slider id="volume" min={0} max={1} step={0.05} value={[p.ambientVolume]} onValueChange={([v]) => p.set({ ambientVolume: v! })} disabled={!p.ambientAudio} />
             </div>
+            <Row id="narration-autoplay" label={t("museum.settings.narrationAutoplay")}>
+              <Switch id="narration-autoplay" checked={p.autoPlayNarration} onCheckedChange={(v) => p.set({ autoPlayNarration: v })} />
+            </Row>
           </section>
           <Separator className="bg-white/10" />
           <section className="grid gap-3">

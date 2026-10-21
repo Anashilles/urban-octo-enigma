@@ -195,13 +195,15 @@ export async function updateMuseum(userId: string, museumId: string, patch: z.in
 
 /** Collects every storage key that belongs to a museum (photos and pending uploads). */
 async function museumStorageKeys(museumId: string) {
-  const [photos, uploads] = await Promise.all([
+  const [photos, uploads, narrations] = await Promise.all([
     prisma.photo.findMany({ where: { museumId }, select: { storageKey: true, largeKey: true, mediumKey: true, thumbnailKey: true } }),
     prisma.pendingUpload.findMany({ where: { museumId }, select: { incomingKey: true } }),
+    prisma.tourNarration.findMany({ where: { museumId }, select: { storageKey: true } }),
   ]);
   return [
     ...photos.flatMap((p) => [p.storageKey, p.largeKey, p.mediumKey, p.thumbnailKey]),
     ...uploads.map((u) => u.incomingKey),
+    ...narrations.map((n) => n.storageKey),
   ];
 }
 

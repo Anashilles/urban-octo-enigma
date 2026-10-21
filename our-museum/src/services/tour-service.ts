@@ -4,6 +4,7 @@ import { errors } from "@/lib/errors";
 import { tourSchema, type TourInput } from "@/lib/validation/tours";
 import { requireMuseumAccess } from "./access";
 import { recordEvent } from "./audit-service";
+import { tidyNarrations } from "./narration-service";
 import { notifyMuseumChanged } from "./realtime-notify";
 
 const MAX_TOURS_PER_MUSEUM = 30;
@@ -37,6 +38,8 @@ export async function saveTour(actorId: string, museumId: string, input: TourInp
     await recordEvent({ museumId, actorId, eventType: "tour.saved", entityId: id, metadata: { stops: data.stops.length } }, tx);
     return tx.guidedTour.findUniqueOrThrow({ where: { id }, include: { stops: { orderBy: { sortOrder: "asc" } } } });
   });
+  // Narrations are keyed by (tour, photograph), so they survive the stops being rewritten.
+  if (tourId) await tidyNarrations(museumId);
   notifyMuseumChanged(museumId, "tours", actorId);
   return toResponse(tour);
 }
@@ -49,5 +52,6 @@ export async function deleteTour(actorId: string, museumId: string, tourId: stri
     await tx.guidedTour.delete({ where: { id: tourId } });
     await recordEvent({ museumId, actorId, eventType: "tour.deleted", entityId: tourId }, tx);
   });
+  await tidyNarrations(museumId);
   notifyMuseumChanged(museumId, "tours", actorId);
 }

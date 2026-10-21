@@ -71,8 +71,9 @@ function SaveIndicator() {
     );
   if (lastSavedAt)
     return (
-      <span className="flex items-center gap-1.5 text-sm text-sage" role="status" data-testid="save-status" data-state="saved">
-        <CheckIcon className="size-4" aria-hidden="true" />
+      // The sage tick alone carries the colour: sage text is too light to read on ivory.
+      <span className="flex items-center gap-1.5 text-sm text-muted-foreground" role="status" data-testid="save-status" data-state="saved">
+        <CheckIcon className="size-4 text-sage" aria-hidden="true" />
         {t("editor.save.saved")}
       </span>
     );

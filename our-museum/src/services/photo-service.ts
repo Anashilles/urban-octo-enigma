@@ -8,6 +8,7 @@ import type { z } from "zod";
 import type { completeUploadSchema, createUploadSchema, updatePhotoSchema } from "@/lib/validation/photos";
 import { requireMuseumAccess } from "./access";
 import { recordEvent } from "./audit-service";
+import { tidyNarrations } from "./narration-service";
 import { ACCEPTED_MIME_TYPES } from "./image-processing-types";
 import { processImage } from "./image-processing";
 import { notifyMuseumChanged } from "./realtime-notify";
@@ -199,6 +200,7 @@ export async function deletePhoto(userId: string, museumId: string, photoId: str
     if (frames) await bumpLayoutVersion(tx, museumId);
     await recordEvent({ museumId, actorId: userId, eventType: "photo.deleted", entityId: photoId, metadata: { frames } }, tx);
   });
+  await tidyNarrations(museumId);
   kickDeletionQueue();
   notifyMuseumChanged(museumId, "photos", userId);
 }

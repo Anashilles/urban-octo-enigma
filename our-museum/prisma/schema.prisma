@@ -45,6 +45,7 @@ model User {
   createdTours       GuidedTour[]       @relation("TourCreator")
   comments           PhotoComment[]
   guestbookEntries   GuestbookEntry[]
+  narrations         TourNarration[]
 
   @@map("users")
 }
@@ -147,6 +148,7 @@ model Museum {
   tours          GuidedTour[]
   comments       PhotoComment[]
   guestbook      GuestbookEntry[]
+  narrations     TourNarration[]
 
   @@index([ownerId])
   @@map("museums")
@@ -430,7 +432,8 @@ model PhotoFrame {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  tourStops TourStop[]
+  tourStops  TourStop[]
+  narrations TourNarration[]
 
   @@index([museumId])
   @@index([wallId])
@@ -467,7 +470,8 @@ model GuidedTour {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  stops TourStop[]
+  stops      TourStop[]
+  narrations TourNarration[]
 
   @@index([museumId])
   @@map("guided_tours")
@@ -535,4 +539,28 @@ model GuestbookEntry {
   @@index([museumId, createdAt])
   @@index([authorId])
   @@map("guestbook_entries")
+}
+
+/// A recorded voice narration for one photograph in a tour. Kept per (tour,
+/// frame) so it survives edits to the tour's stops; rows whose tour or frame
+/// is gone, or that no stop uses any more, are cleaned up and their files deleted.
+model TourNarration {
+  id          String      @id @default(cuid(2))
+  museumId    String
+  museum      Museum      @relation(fields: [museumId], references: [id], onDelete: Cascade)
+  tourId      String?
+  tour        GuidedTour? @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  frameId     String?
+  frame       PhotoFrame? @relation(fields: [frameId], references: [id], onDelete: SetNull)
+  storageKey  String      @unique
+  mimeType    String
+  durationMs  Int
+  sizeBytes   Int
+  createdById String?
+  createdBy   User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+
+  @@unique([tourId, frameId])
+  @@index([museumId])
+  @@map("tour_narrations")
 }

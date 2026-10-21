@@ -13,6 +13,7 @@ import {
 import { computeWallSpec, type WallKey } from "@/features/rooms/geometry";
 import { requireMuseumAccess } from "./access";
 import { recordEvent } from "./audit-service";
+import { tidyNarrations } from "./narration-service";
 import { notifyMuseumChanged } from "./realtime-notify";
 import { bumpLayoutVersion, toRoomShape } from "./room-service";
 
@@ -162,6 +163,7 @@ export async function deleteFrame(userId: string, museumId: string, frameId: str
     await bumpLayoutVersion(tx, museumId);
     await recordEvent({ museumId, actorId: userId, eventType: "frame.deleted", entityId: frameId }, tx);
   });
+  await tidyNarrations(museumId);
   notifyMuseumChanged(museumId, "layout", userId);
 }
 

@@ -11,7 +11,7 @@ this person see or change this?" is **no** unless the server says yes.
 | A visitor editing or deleting things | One server-side permissions table (`src/lib/permissions`) checked in every service and in the realtime hub; the UI only hides controls |
 | Leaked or guessed invitation links | 256-bit random tokens, stored as SHA-256 hashes, shown once; expiry, use limits, revocation, optional email binding; redemption is rate-limited and row-locked |
 | Location leaks from photo metadata | Every upload is decoded and re-encoded; EXIF, XMP, IPTC and GPS are dropped (only orientation is applied, then removed) |
-| Malicious files | Type checked by magic bytes, not extension; size limit enforced before and after upload; pixel limit (100 MP) and decode errors rejected; only re-encoded images are ever served |
+| Malicious files | Type checked by magic bytes, not extension; size limit enforced before and after upload; pixel limit (100 MP) and decode errors rejected; only re-encoded images are ever served. Narrations must be WebM, Ogg or MP4 by content, at most 5 MB (checked while the body streams in) and 3 minutes, and are served with their detected audio type and `nosniff` |
 | Cross-site request forgery | Mutating API calls require a same-origin `Origin` / `Sec-Fetch-Site`; cookies are `HttpOnly`, `SameSite=Lax`, `Secure` in production |
 | Cross-site scripting | React escaping, no `dangerouslySetInnerHTML` for user content, a per-request nonce CSP with `strict-dynamic`, `object-src 'none'`, `frame-ancestors 'none'` |
 | Realtime impersonation or eavesdropping | Connections need a single-use, 60-second ticket minted after a membership check; origin allow-list; every message validated and permission-checked; removed members are disconnected immediately |
@@ -88,7 +88,7 @@ cross-museum id substitution for frames.
 | Password reset, verification email | 5 per 5 minutes | Better Auth |
 | API reads | burst 120, 4/s | `src/lib/rate-limit.ts` |
 | API mutations | burst 60, 2/s | 〃 |
-| Uploads | burst 30, 1 per 2 s | 〃 |
+| Uploads (photos and narrations) | burst 30, 1 per 2 s | 〃 |
 | Invitation creation | burst 20, 1 per 30 s | 〃 |
 | Invitation redemption | burst 10, 1 per 20 s | 〃 |
 | Realtime tickets | burst 20, 1 per 2 s | 〃 |

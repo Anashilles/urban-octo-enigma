@@ -9,8 +9,8 @@ import { recordEvent } from "./audit-service";
 import { storage } from "./storage";
 
 /**
- * Owner's copy of a museum as a ZIP: the sanitised originals, museum.json
- * (rooms, frames, collections, tours, comments, guestbook) and index.html, an
+ * Owner's copy of a museum as a ZIP: the sanitised originals, tour narrations,
+ * museum.json (rooms, frames, collections, tours, comments, guestbook) and index.html, an
  * offline gallery with no scripts. Files are read and zipped one at a time as
  * the download is consumed, so memory stays bounded.
  */
@@ -34,7 +34,7 @@ export function slugify(value: string, fallback: string) {
 }
 
 async function loadMuseum(museumId: string) {
-  const [museum, rooms, frames, photos, collections, tours, comments, guestbook] = await Promise.all([
+  const [museum, rooms, frames, photos, collections, tours, comments, guestbook, narrations] = await Promise.all([
     prisma.museum.findUniqueOrThrow({ where: { id: museumId }, include: { owner: { select: { displayName: true } } } }),
     prisma.museumRoom.findMany({ where: { museumId }, orderBy: { sortOrder: "asc" } }),
     prisma.photoFrame.findMany({ where: { museumId }, orderBy: { createdAt: "asc" }, include: { wall: { select: { wallKey: true } } } }),
@@ -43,14 +43,23 @@ async function loadMuseum(museumId: string) {
     prisma.guidedTour.findMany({ where: { museumId }, orderBy: { createdAt: "asc" }, include: { stops: { orderBy: { sortOrder: "asc" } } } }),
     prisma.photoComment.findMany({ where: { museumId }, orderBy: { createdAt: "asc" }, include: { author: { select: { displayName: true } } } }),
     prisma.guestbookEntry.findMany({ where: { museumId }, orderBy: { createdAt: "asc" }, include: { author: { select: { displayName: true } } } }),
+    prisma.tourNarration.findMany({ where: { museumId, tourId: { not: null }, frameId: { not: null } } }),
   ]);
-  return { museum, rooms, frames, photos, collections, tours, comments, guestbook };
+  return { museum, rooms, frames, photos, collections, tours, comments, guestbook, narrations };
 }
 
 type Loaded = Awaited<ReturnType<typeof loadMuseum>>;
 
-function buildManifest(data: Loaded, fileOf: Map<string, string>, missing: Set<string>, exportedAt: Date) {
-  const { museum, rooms, frames, photos, collections, tours, comments, guestbook } = data;
+/** Files in the archive: photos by photo id, narrations by "tourId:frameId". Missing ones are left out. */
+interface ExportFiles {
+  photos: Map<string, string>;
+  narrations: Map<string, string>;
+  missing: Set<string>;
+}
+
+function buildManifest(data: Loaded, files: ExportFiles, exportedAt: Date) {
+  const { museum, rooms, frames, photos, collections, tours, comments, guestbook, narrations } = data;
+  const { photos: fileOf, missing } = files;
   const frameById = new Map(frames.map((f) => [f.id, f]));
   const photoFile = (photoId: string) => (missing.has(photoId) ? null : (fileOf.get(photoId) ?? null));
   return {
@@ -97,7 +106,16 @@ function buildManifest(data: Loaded, fileOf: Map<string, string>, missing: Set<s
     tours: tours.map((t) => ({
       name: t.name,
       description: t.description,
-      stops: t.stops.map((s) => ({ photo: photoFile(frameById.get(s.frameId)?.photoId ?? ""), note: s.note })),
+      stops: t.stops.map((s) => {
+        const key = `${t.id}:${s.frameId}`;
+        const narration = narrations.find((n) => `${n.tourId}:${n.frameId}` === key);
+        const file = files.narrations.get(key);
+        return {
+          photo: photoFile(frameById.get(s.frameId)?.photoId ?? ""),
+          note: s.note,
+          narration: narration && file && !missing.has(key) ? { file, durationMs: narration.durationMs } : null,
+        };
+      }),
     })),
     guestbook: guestbook.map((g) => ({ author: g.author.displayName, body: g.body, at: g.createdAt.toISOString() })),
   };
@@ -122,7 +140,7 @@ function buildIndexHtml(m: Manifest, locale: Locale, missingCount: number) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'">
 <title>${e(title)}</title>
 <style>
 :root{color-scheme:light;--ink:#242321;--muted:#66625a;--paper:#f5f2ec;--card:#fbf9f5;--gold:#7f622d}
@@ -150,7 +168,7 @@ ${m.collections
   .map((c) => `<section><h2>${e(c.name)}</h2>${c.description ? `<p class="muted">${e(c.description)}</p>` : ""}<div class="grid">${c.photos.map((f) => figure(m.photos.find((p) => p.file === f)!)).join("")}</div></section>`)
   .join("\n")}
 <section><h2>${e(t("export.photos"))}</h2><div class="grid">${m.photos.map(figure).join("")}</div></section>
-${m.tours.length ? `<section><h2>${e(t("export.tours"))}</h2>${m.tours.map((tour) => `<h3>${e(tour.name)}</h3>${tour.description ? `<p class="muted">${e(tour.description)}</p>` : ""}<ol class="stops">${tour.stops.map((s) => `<li>${s.photo ? `<a href="#${e(s.photo)}">${e(m.photos.find((p) => p.file === s.photo)?.title || s.photo)}</a>` : ""}${s.note ? ` — <span class="note">${e(s.note)}</span>` : ""}</li>`).join("")}</ol>`).join("")}</section>` : ""}
+${m.tours.length ? `<section><h2>${e(t("export.tours"))}</h2>${m.tours.map((tour) => `<h3>${e(tour.name)}</h3>${tour.description ? `<p class="muted">${e(tour.description)}</p>` : ""}<ol class="stops">${tour.stops.map((s) => `<li>${s.photo ? `<a href="#${e(s.photo)}">${e(m.photos.find((p) => p.file === s.photo)?.title || s.photo)}</a>` : ""}${s.note ? ` — <span class="note">${e(s.note)}</span>` : ""}${s.narration ? `<br><audio controls preload="none" src="${e(s.narration.file)}"></audio>` : ""}</li>`).join("")}</ol>`).join("")}</section>` : ""}
 ${m.guestbook.length ? `<section><h2>${e(t("export.guestbook"))}</h2><ul class="notes">${notes(m.guestbook)}</ul></section>` : ""}
 </main>
 </body>
@@ -170,7 +188,26 @@ export async function exportMuseum(userId: string, museumId: string, locale: Loc
     const base = p.title || p.originalFilename.replace(/\.[^.]+$/, "");
     fileOf.set(p.id, `photos/${String(i + 1).padStart(3, "0")}-${slugify(base, "photo")}.${ext}`);
   });
+  // narrations/01-02.webm: tour 1, stop 2.
+  const narrationOf = new Map<string, string>();
+  data.tours.forEach((tour, ti) => {
+    tour.stops.forEach((stop, si) => {
+      const n = data.narrations.find((x) => x.tourId === tour.id && x.frameId === stop.frameId);
+      const key = `${tour.id}:${stop.frameId}`;
+      if (n && !narrationOf.has(key)) narrationOf.set(key, `narrations/${String(ti + 1).padStart(2, "0")}-${String(si + 1).padStart(2, "0")}.${n.storageKey.split(".").pop()}`);
+    });
+  });
   const missing = new Set<string>();
+  const files: ExportFiles = { photos: fileOf, narrations: narrationOf, missing };
+  const read = async (key: string, id: string, what: string) => {
+    try {
+      return new Uint8Array(await storage().get(key));
+    } catch (error) {
+      missing.add(id);
+      logger.warn("export_file_missing", { museumId, what, id, error: error instanceof Error ? error.message : String(error) });
+      return null;
+    }
+  };
 
   type Entry = { name: string; compress: boolean; read: () => Promise<Uint8Array | null> };
   const entries: Entry[] = [
@@ -178,20 +215,19 @@ export async function exportMuseum(userId: string, museumId: string, locale: Loc
       (p): Entry => ({
         name: fileOf.get(p.id)!,
         compress: false, // JPEG/PNG are already compressed
-        read: async () => {
-          try {
-            return new Uint8Array(await storage().get(p.storageKey));
-          } catch (error) {
-            missing.add(p.id);
-            logger.warn("export_photo_missing", { museumId, photoId: p.id, error: error instanceof Error ? error.message : String(error) });
-            return null;
-          }
-        },
+        read: () => read(p.storageKey, p.id, "photo"),
       }),
     ),
-    // Written last, so they reflect any photo that could not be read.
-    { name: "museum.json", compress: true, read: async () => strToU8(JSON.stringify(buildManifest(data, fileOf, missing, exportedAt), null, 2)) },
-    { name: "index.html", compress: true, read: async () => strToU8(buildIndexHtml(buildManifest(data, fileOf, missing, exportedAt), locale, missing.size)) },
+    ...data.narrations
+      .filter((n) => narrationOf.has(`${n.tourId}:${n.frameId}`))
+      .map((n): Entry => ({ name: narrationOf.get(`${n.tourId}:${n.frameId}`)!, compress: false, read: () => read(n.storageKey, `${n.tourId}:${n.frameId}`, "narration") })),
+    // Written last, so they reflect any file that could not be read.
+    { name: "museum.json", compress: true, read: async () => strToU8(JSON.stringify(buildManifest(data, files, exportedAt), null, 2)) },
+    {
+      name: "index.html",
+      compress: true,
+      read: async () => strToU8(buildIndexHtml(buildManifest(data, files, exportedAt), locale, data.photos.filter((p) => missing.has(p.id)).length)),
+    },
   ];
 
   let zip: Zip;
@@ -227,7 +263,7 @@ export async function exportMuseum(userId: string, museumId: string, locale: Loc
     { highWaterMark: 1 },
   );
 
-  await recordEvent({ museumId, actorId: userId, eventType: "museum.exported", metadata: { photos: data.photos.length } });
+  await recordEvent({ museumId, actorId: userId, eventType: "museum.exported", metadata: { photos: data.photos.length, narrations: narrationOf.size } });
   const date = exportedAt.toISOString().slice(0, 10);
   return { stream, filename: `our-museum-${slugify(data.museum.name, "museum")}-${date}.zip` };
 }

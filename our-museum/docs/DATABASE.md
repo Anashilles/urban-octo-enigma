@@ -28,7 +28,7 @@ In Docker, migrations run as the one-off `migrate` service (see
 | Hanging | `photo_frames` | Position on a wall (u, v in metres), size, tilt, frame style, mat and plaque options, edit `version`. |
 | People | `avatar_profiles` | One validated avatar config per user. |
 | Notes | `photo_comments`, `guestbook_entries` | Plain text (control characters stripped, ≤ 1000 / 500 characters). Removed with the photo, the museum or the author's account. |
-| Tours | `guided_tours`, `tour_stops` | Ordered stops referencing frames, with notes. |
+| Tours | `guided_tours`, `tour_stops`, `tour_narrations` | Ordered stops referencing frames, with notes. A narration is one private audio file per (tour, frame), with its duration; orphaned narrations are swept and their files queued for deletion. |
 | Audit | `museum_events` | Who did what: invitations, membership changes, failed uploads, frame, room, tour and photo changes, deletions. |
 
 Deleting a museum cascades to everything that belongs to it; its stored files

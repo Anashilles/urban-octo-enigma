@@ -18,11 +18,12 @@ English and Arabic (full right-to-left layout) are built in.
 | Photos | Direct uploads (JPEG, PNG, WebP, HEIC), metadata and GPS stripped, 3 web derivatives, collections, favourites, timeline by date taken |
 | Hanging | Wall editor with snapping and overlap/doorway checks, and **Place on Wall** while walking through the museum |
 | Exploring | First/third-person walking, keyboard, mouse and touch controls, photo viewer with zoom/pan, guided tours, generative ambient sound |
+| Narrated tours | Owners and editors record a voice note for each tour stop in the browser; it plays when visitors (or a live tour's followers) arrive |
 | Avatars | Procedural rigged avatars (body, skin, hair, clothes, accessories) with idle/walk/run/wave animations |
 | Together | Invitations (hashed single-use or multi-use links, email optional), presence, smooth movement, name tags, **Look Together** (shared photo viewing), live tours, reactions, go-to-person |
 | Voice | Optional WebRTC voice chat with spatial audio, mute, speaking indicators and listen-only fallback; optional relay-only mode |
 | Notes | Comments on each photograph (in the viewer) and a museum guestbook, live for everyone present, moderated by the owner |
-| Export | The owner downloads a ZIP: original photos, `museum.json` (rooms, frames, collections, tours, notes) and an offline gallery page |
+| Export | The owner downloads a ZIP: original photos, tour narrations, `museum.json` (rooms, frames, collections, tours, notes) and an offline gallery page |
 | Roles | Owner / Editor / Visitor, enforced on the server for every API call and realtime message |
 | Operations | Health endpoint, admin diagnostics, maintenance cron, Docker images and compose stack |
 

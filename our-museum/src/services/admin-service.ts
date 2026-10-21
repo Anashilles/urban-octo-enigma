@@ -2,6 +2,7 @@ import "server-only";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/database/prisma";
 import { apiLimiter } from "@/lib/rate-limit";
+import { cleanupOrphanNarrations } from "./narration-service";
 import { cleanupAbandonedUploads } from "./photo-service";
 import { processDeletionQueue, storage } from "./storage";
 
@@ -76,6 +77,7 @@ export type Diagnostics = Awaited<ReturnType<typeof getDiagnostics>>;
 
 export async function runMaintenance() {
   const abandoned = await cleanupAbandonedUploads();
+  const narrations = await cleanupOrphanNarrations();
   const deletions = await processDeletionQueue(500);
-  return { abandoned, ...deletions };
+  return { abandoned, narrations, ...deletions };
 }

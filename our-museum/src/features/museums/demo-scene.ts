@@ -144,7 +144,7 @@ export function buildDemoScene(templateId: TemplateId, t: Translator, photoCount
             name: t("demo.tourName"),
             description: t("demo.tourDescription"),
             stops: (["a", "b", "c", "d"] as const)
-              .map((k, i) => ({ id: `demo-stop-${k}`, frameId: frames[Math.min(frames.length - 1, i * 2)]!.id, note: t(`demo.tourNotes.${k}`) }))
+              .map((k, i) => ({ id: `demo-stop-${k}`, frameId: frames[Math.min(frames.length - 1, i * 2)]!.id, note: t(`demo.tourNotes.${k}`), narration: null }))
               .filter((s, i, all) => all.findIndex((x) => x.frameId === s.frameId) === i),
           },
         ]

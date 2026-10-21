@@ -21,6 +21,7 @@ function buildCsp(nonce: string): string {
   const storage = originOf(process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT);
   const connect = ["'self'", "blob:", "data:", realtime, storage, isDev ? "ws://localhost:*" : null].filter(Boolean);
   const images = ["'self'", "blob:", "data:", storage].filter(Boolean);
+  const media = ["'self'", "blob:", storage].filter(Boolean);
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -29,7 +30,7 @@ function buildCsp(nonce: string): string {
     `img-src ${images.join(" ")}`,
     "font-src 'self' data:",
     `connect-src ${connect.join(" ")}`,
-    "media-src 'self' blob:",
+    `media-src ${media.join(" ")}`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

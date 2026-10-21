@@ -3,6 +3,7 @@ import { apiHandler, json } from "@/lib/api/handler";
 import { env } from "@/lib/env";
 import { errors } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { cleanupOrphanNarrations } from "@/services/narration-service";
 import { cleanupAbandonedUploads } from "@/services/photo-service";
 import { processDeletionQueue } from "@/services/storage";
 
@@ -17,14 +18,15 @@ function authorised(req: Request) {
 
 /**
  * Periodic maintenance (Vercel Cron or any scheduler): removes abandoned
- * uploads and retries queued storage deletions. Requires CRON_SECRET.
+ * uploads and orphaned narrations, and retries queued storage deletions. Requires CRON_SECRET.
  */
 async function run(req: Request) {
   if (!authorised(req)) throw errors.unauthenticated("Invalid cron secret");
   const abandoned = await cleanupAbandonedUploads();
+  const narrations = await cleanupOrphanNarrations();
   const deletions = await processDeletionQueue(500);
-  logger.info("cron_cleanup", { abandoned, ...deletions });
-  return json({ abandoned, ...deletions });
+  logger.info("cron_cleanup", { abandoned, narrations, ...deletions });
+  return json({ abandoned, narrations, ...deletions });
 }
 
 export const GET = apiHandler(async (req) => run(req), { skipCsrf: true });

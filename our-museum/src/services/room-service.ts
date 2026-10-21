@@ -24,6 +24,7 @@ import type { z } from "zod";
 import type { createRoomSchema, updateRoomSchema } from "@/lib/validation/museum";
 import { requireMuseumAccess } from "./access";
 import { recordEvent } from "./audit-service";
+import { tidyNarrations } from "./narration-service";
 import { notifyMuseumChanged } from "./realtime-notify";
 
 export function toRoomShape(row: MuseumRoom): RoomShape {
@@ -240,6 +241,7 @@ export async function deleteRoom(userId: string, museumId: string, roomId: strin
     await recordEvent({ museumId, actorId: userId, eventType: "room.deleted", entityId: roomId, metadata: { frameCount } }, tx);
     return { frameCount };
   });
+  if (result.frameCount) await tidyNarrations(museumId);
   notifyMuseumChanged(museumId, "layout", userId);
   return result;
 }

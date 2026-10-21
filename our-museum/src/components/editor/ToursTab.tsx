@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowDownIcon, ArrowUpIcon, CheckIcon, Loader2Icon, PencilIcon, PlusIcon, RouteIcon, Trash2Icon, XIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, CheckIcon, Loader2Icon, MicIcon, PencilIcon, PlusIcon, RouteIcon, Trash2Icon, XIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,7 @@ import { useI18n } from "@/i18n/client";
 import { MAX_TOUR_STOPS } from "@/lib/validation/tours";
 import { cn } from "@/lib/utils";
 import { useEditor } from "./editor-context";
+import { NarrationRecorder } from "./NarrationRecorder";
 
 interface Draft {
   id: string | null;
@@ -43,6 +44,8 @@ export function ToursTab() {
     const p = f ? photos.get(f.photoId) : undefined;
     return { frame: f, photo: p, title: p?.title || t("common.untitled") };
   };
+
+  const savedTour = draft?.id ? scene.tours.find((x) => x.id === draft.id) : undefined;
 
   const edit = (tour: SceneTour) => setDraft({ id: tour.id, name: tour.name, description: tour.description, stops: tour.stops.map((s) => ({ frameId: s.frameId, note: s.note })) });
 
@@ -170,6 +173,8 @@ export function ToursTab() {
                   {draft.stops.map((stop, i) => {
                     const { photo, title } = frameLabel(stop.frameId);
                     const thumb = photo ? photoImageUrl(photo, "thumb") : null;
+                    // Narrations belong to a saved stop; new stops get one after saving.
+                    const savedStop = savedTour?.stops.find((s) => s.frameId === stop.frameId);
                     return (
                       <li key={`${stop.frameId}-${i}`} className="grid gap-2 rounded-xl border border-border bg-card p-3">
                         <div className="flex items-center gap-3">
@@ -202,6 +207,14 @@ export function ToursTab() {
                           aria-label={`${t("editor.tours.note")} ${i + 1}`}
                           onChange={(e) => setDraft({ ...draft, stops: draft.stops.map((s, j) => (j === i ? { ...s, note: e.target.value } : s)) })}
                         />
+                        {savedStop ? (
+                          <NarrationRecorder tourId={draft.id!} frameId={stop.frameId} narration={savedStop.narration} />
+                        ) : (
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="narration-save-first">
+                            <MicIcon className="size-3.5" aria-hidden="true" />
+                            {t("editor.tours.narration.saveFirst")}
+                          </p>
+                        )}
                       </li>
                     );
                   })}
@@ -239,7 +252,8 @@ export function ToursTab() {
                           inTour ? "border-gold" : "border-transparent hover:border-foreground/30",
                         )}
                         style={{ background: p?.dominantColor }}
-                        aria-label={`${t("editor.tours.addStops")}: ${p?.title || t("common.untitled")}`}
+                        // The name includes the visible "In the tour" badge.
+                        aria-label={`${t("editor.tours.addStops")}: ${p?.title || t("common.untitled")}${inTour ? `, ${t("editor.tours.inTour")}` : ""}`}
                         data-testid="tour-add-frame"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element -- signed short-lived URL */}

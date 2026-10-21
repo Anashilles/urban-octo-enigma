@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-10-20_
+_Last updated: 2026-10-21_
 
 Our Museum is a working application: every feature below runs against the
 real backend (PostgreSQL, storage, realtime service). Sample data is used only
@@ -20,6 +20,7 @@ stack has been built and run locally (see [Verification](#verification)).
 | 5 | Voice chat (spatial), guided tours (solo and led live), ambient sound, phone layout, admin diagnostics, deployment | Done, with the gaps listed below |
 | + | Comments on photographs and a museum guestbook (live, moderated, switchable) | Done |
 | + | Museum export: ZIP with originals, manifest and an offline gallery page | Done |
+| + | Narrated tours: a voice note recorded in the browser for each stop, played on arrival (solo and live tours), included in exports | Done (recording verified in Chromium only) |
 
 ## Verification
 
@@ -90,10 +91,15 @@ Listed plainly so nobody mistakes them for finished:
    loading exist), and load on the web app and database.
 10. **Monitoring and backups** — JSON logs, health endpoints and the admin page
     only; no error-tracking service, alerting or automated backups.
-11. **Content features not built** — narrated (audio) tours, video uploads,
-    importing from photo services or from an export, and custom 3D model
-    upload for avatars or decor.
-12. **CI coverage** — GitHub Actions runs lint, typecheck, unit +
+11. **Content features not built** — video uploads, importing from photo
+    services or from an export, and custom 3D model upload for avatars or
+    decor. Narrations are recorded in the browser only (no uploading an
+    existing audio file, no trimming or transcripts).
+12. **Narration in other browsers** — recording and playback were verified
+    in Chromium with its fake microphone. Safari records MP4 and Firefox Ogg
+    or WebM; the server accepts all three, but neither browser has been
+    tried.
+13. **CI coverage** — GitHub Actions runs lint, typecheck, unit +
     integration tests, a secret-free build and the Playwright suite on every
     push. The opt-in checks (S3, TURN relay) need external services and run
     only when configured.

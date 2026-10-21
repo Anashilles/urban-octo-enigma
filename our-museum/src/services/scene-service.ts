@@ -9,6 +9,7 @@ import { roomAt, WALL_KEYS, type WallKey } from "@/features/rooms/geometry";
 import { requireMuseumAccess } from "./access";
 import { getAvatar } from "./avatar-service";
 import { recordVisit } from "./museum-service";
+import { narrationsForScene } from "./narration-service";
 import { toRoomShape } from "./room-service";
 import { SIGNED_URL_TTL_SECONDS, storage } from "./storage";
 
@@ -30,7 +31,7 @@ export async function signedPhotoUrls(p: { thumbnailKey: string; mediumKey: stri
 export async function getScene(user: { id: string; displayName: string; isAnonymous: boolean }, museumId: string, opts: { recordVisit?: boolean } = {}): Promise<SceneData> {
   const { museum, role } = await requireMuseumAccess(user.id, museumId, "museum.view");
   const commentsOn = resolvePrivacy(museum.privacy).commentsEnabled;
-  const [owner, rooms, frames, photos, collections, tours, reactions, avatar, commentCounts, guestbookCount] = await Promise.all([
+  const [owner, rooms, frames, photos, collections, tours, reactions, avatar, commentCounts, guestbookCount, narrations] = await Promise.all([
     prisma.user.findUnique({ where: { id: museum.ownerId }, select: { displayName: true } }),
     prisma.museumRoom.findMany({ where: { museumId }, orderBy: { sortOrder: "asc" }, include: { walls: true } }),
     prisma.photoFrame.findMany({ where: { museumId }, include: { wall: { select: { wallKey: true } } }, orderBy: { createdAt: "asc" } }),
@@ -56,6 +57,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
     getAvatar(user.id),
     commentsOn ? prisma.photoComment.groupBy({ by: ["photoId"], where: { museumId }, _count: { _all: true } }) : [],
     commentsOn ? prisma.guestbookEntry.count({ where: { museumId } }) : 0,
+    narrationsForScene(museumId),
   ]);
   const commentsByPhoto = new Map(commentCounts.map((c) => [c.photoId, c._count._all]));
 
@@ -155,7 +157,7 @@ export async function getScene(user: { id: string; displayName: string; isAnonym
       id: t.id,
       name: t.name,
       description: t.description,
-      stops: t.stops.map((s) => ({ id: s.id, frameId: s.frameId, note: s.note })),
+      stops: t.stops.map((s) => ({ id: s.id, frameId: s.frameId, note: s.note, narration: narrations.get(`${t.id}:${s.frameId}`) ?? null })),
     })),
     viewer: {
       userId: user.id,

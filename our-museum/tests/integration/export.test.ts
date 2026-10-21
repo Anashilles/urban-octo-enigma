@@ -4,6 +4,7 @@ import { prisma } from "@/lib/database/prisma";
 import { setCollectionPhotos } from "@/services/collection-service";
 import { addComment, signGuestbook } from "@/services/comment-service";
 import { exportMuseum, slugify } from "@/services/export-service";
+import { saveNarration } from "@/services/narration-service";
 import { createMuseum } from "@/services/museum-service";
 import { placeFrame } from "@/services/photo-placement-service";
 import { getScene } from "@/services/scene-service";
@@ -55,14 +56,18 @@ describe("museum export", () => {
     const room = scene.rooms.find((r) => r.roomType === "custom")!; // its north wall has no doorway
     const frame = await placeFrame(owner.id, museum.id, { photoId: a.id, roomId: room.id, wallKey: "north", u: 0, v: 1.55, width: 0.8, rotation: 0, style: "white-gallery", options: {} });
     await setCollectionPhotos(owner.id, museum.id, scene.collections[0]!.id, [b.id, a.id]);
-    await saveTour(owner.id, museum.id, { name: "Start here", description: "", stops: [{ frameId: frame.id, note: "Our first trip" }] });
+    const tour = await saveTour(owner.id, museum.id, { name: "Start here", description: "", stops: [{ frameId: frame.id, note: "Our first trip" }] });
+    const voice = new Uint8Array(512).fill(9);
+    voice.set([0x1a, 0x45, 0xdf, 0xa3]);
+    await saveNarration(owner.id, museum.id, tour.id, frame.id, voice, 6400);
     await addComment(owner.id, museum.id, a.id, { body: "Grandpa took this" });
     await signGuestbook(owner.id, museum.id, { body: "Welcome!" });
 
     const { filename, files, manifest, html } = await unzip(owner.id, museum.id);
     expect(filename).toMatch(/^our-museum-family-album-\d{4}-\d{2}-\d{2}\.zip$/);
     const names = Object.keys(files).sort();
-    expect(names).toEqual(["index.html", "museum.json", "photos/001-script-alert-x-script.jpg", "photos/002-صيف-الإسكندرية.jpg"]);
+    expect(names).toEqual(["index.html", "museum.json", "narrations/01-01.webm", "photos/001-script-alert-x-script.jpg", "photos/002-صيف-الإسكندرية.jpg"]);
+    expect(Buffer.from(files["narrations/01-01.webm"]!).equals(Buffer.from(voice))).toBe(true);
     // Originals byte for byte.
     expect(Buffer.from(files["photos/001-script-alert-x-script.jpg"]!).equals(bytesA)).toBe(true);
 
@@ -74,7 +79,7 @@ describe("museum export", () => {
         { file: "photos/001-script-alert-x-script.jpg", title: '<script>alert("x")</script>', takenAt: "1998-07-14T10:00:00.000Z", comments: [{ body: "Grandpa took this" }] },
         { file: "photos/002-صيف-الإسكندرية.jpg", title: "صيف الإسكندرية" },
       ],
-      tours: [{ name: "Start here", stops: [{ photo: "photos/001-script-alert-x-script.jpg", note: "Our first trip" }] }],
+      tours: [{ name: "Start here", stops: [{ photo: "photos/001-script-alert-x-script.jpg", note: "Our first trip", narration: { file: "narrations/01-01.webm", durationMs: 6400 } }] }],
       guestbook: [{ body: "Welcome!" }],
     });
     expect(manifest.collections[0].photos).toEqual(["photos/002-صيف-الإسكندرية.jpg", "photos/001-script-alert-x-script.jpg"]);
@@ -86,7 +91,8 @@ describe("museum export", () => {
     // The page is inert: escaped text and a CSP without scripts.
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;");
-    expect(html).toContain("default-src 'none'; img-src 'self'");
+    expect(html).toContain("default-src 'none'; img-src 'self'; media-src 'self'");
+    expect(html).toContain('<audio controls preload="none" src="narrations/01-01.webm">');
     expect(html).toContain('src="photos/002-صيف-الإسكندرية.jpg"');
     expect(await prisma.museumEvent.count({ where: { eventType: "museum.exported" } })).toBe(1);
   });
