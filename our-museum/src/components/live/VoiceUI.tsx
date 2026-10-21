@@ -74,7 +74,7 @@ export function VoiceSection({ voice, enabled }: { voice: VoiceActions; enabled:
             <MicIcon aria-hidden="true" />
             {t("museum.voice.join")}
           </Button>
-          <p className="text-xs leading-relaxed text-ivory/55">{t("museum.voice.privacy")}</p>
+          <p className="text-xs leading-relaxed text-ivory/60">{t("museum.voice.privacy")}</p>
         </>
       ) : (
         <>
@@ -110,7 +110,7 @@ export function VoiceSection({ voice, enabled }: { voice: VoiceActions; enabled:
               </Select>
             </div>
           )}
-          <p className="text-xs text-ivory/55">{t("museum.voice.spatialHint")}</p>
+          <p className="text-xs text-ivory/60">{t("museum.voice.spatialHint")}</p>
         </>
       )}
       {v.error && (

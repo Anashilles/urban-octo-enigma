@@ -35,6 +35,7 @@ export class VoiceManager {
   private analyser: AnalyserNode | null = null;
   private links = new Map<string, PeerLink>();
   private iceServers: RTCIceServer[] = [];
+  private iceTransportPolicy: RTCIceTransportPolicy = "all";
   private loop: ReturnType<typeof setInterval> | null = null;
   private speakingSince = 0;
   private lastLoud = 0;
@@ -51,8 +52,10 @@ export class VoiceManager {
     if (store.getState().status !== "off") return;
     store.setState({ status: "starting", error: null });
     try {
-      const ice = await api<{ iceServers: RTCIceServer[] }>("/api/realtime/ice").catch(() => ({ iceServers: [] }));
+      type Ice = { iceServers: RTCIceServer[]; iceTransportPolicy?: RTCIceTransportPolicy };
+      const ice = await api<Ice>("/api/realtime/ice").catch((): Ice => ({ iceServers: [] }));
       this.iceServers = ice.iceServers;
+      this.iceTransportPolicy = ice.iceTransportPolicy ?? "all";
       // Created inside the click handler's task so browsers allow playback.
       const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       this.ctx = AudioCtx ? new AudioCtx() : null;
@@ -178,6 +181,22 @@ export class VoiceManager {
     this.syncPeers(useRealtimeStore.getState().peers);
   }
 
+  /** How each connected peer is reached: candidate types of the selected pair (diagnostics and tests). */
+  async routes(): Promise<Array<{ peerId: string; local: string; remote: string }>> {
+    const out: Array<{ peerId: string; local: string; remote: string }> = [];
+    for (const [peerId, link] of this.links) {
+      const stats = await link.pc.getStats();
+      let pairId: string | undefined;
+      stats.forEach((r) => {
+        if (r.type === "transport" && r.selectedCandidatePairId) pairId = r.selectedCandidatePairId;
+      });
+      const pair = pairId ? stats.get(pairId) : undefined;
+      if (!pair) continue;
+      out.push({ peerId, local: stats.get(pair.localCandidateId)?.candidateType ?? "?", remote: stats.get(pair.remoteCandidateId)?.candidateType ?? "?" });
+    }
+    return out;
+  }
+
   private async offer(peerId: string) {
     const link = this.createLink(peerId);
     const transceiver = link.pc.addTransceiver("audio", { direction: this.stream ? "sendrecv" : "recvonly" });
@@ -188,7 +207,7 @@ export class VoiceManager {
   }
 
   private createLink(peerId: string): PeerLink {
-    const pc = new RTCPeerConnection({ iceServers: this.iceServers });
+    const pc = new RTCPeerConnection({ iceServers: this.iceServers, iceTransportPolicy: this.iceTransportPolicy });
     const link: PeerLink = { pc, pendingCandidates: [], audio: null, source: null, panner: null, gain: null };
     this.links.set(peerId, link);
     this.setConnected(peerId, "connecting");

@@ -58,6 +58,7 @@ export async function getDiagnostics() {
       emailVerificationRequired: e.AUTH_REQUIRE_EMAIL_VERIFICATION,
       stunServers: e.STUN_URLS.length,
       turnRelay: Boolean(e.TURN_URLS.length && e.TURN_SHARED_SECRET),
+      voiceRelayOnly: e.VOICE_RELAY_ONLY ? (e.TURN_URLS.length && e.TURN_SHARED_SECRET ? "on" : "on, but no TURN server: voice cannot connect") : "off",
       cronSecretSet: Boolean(e.CRON_SECRET),
       uploadMaxBytes: e.UPLOAD_MAX_BYTES,
       realtimeUrl: e.REALTIME_PUBLIC_URL,

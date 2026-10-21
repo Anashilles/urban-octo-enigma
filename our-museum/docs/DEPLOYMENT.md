@@ -163,6 +163,7 @@ Commonly set:
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Turn on once SMTP works |
 | `ADMIN_EMAILS` | — | Comma-separated; admins also need a verified email |
 | `STUN_URLS` / `TURN_URLS` / `TURN_SHARED_SECRET` | — | Voice connectivity, see below |
+| `VOICE_RELAY_ONLY` | `false` | Route all voice through TURN to hide visitors' IP addresses from each other |
 | `REALTIME_ALLOWED_ORIGINS` | `APP_URL` | Extra origins allowed to open WebSockets |
 | `REALTIME_TRUST_PROXY` | `false` | `true` only behind your reverse proxy |
 | `REALTIME_MAX_PER_ROOM` / `REALTIME_MAX_PER_USER` | 32 / 3 | Connection caps |
@@ -207,8 +208,24 @@ TURN_SHARED_SECRET=<random>
 ```
 
 The app mints per-user credentials valid for one hour; the shared secret
-never reaches browsers. TURN support is implemented but has **not** been tested
-against a real coturn server.
+never reaches browsers.
+
+**Relay-only voice (privacy).** With `VOICE_RELAY_ONLY=true` browsers use the
+TURN relay exclusively (`iceTransportPolicy: "relay"`), so participants never
+learn each other's IP addresses. It fails closed: without a working TURN
+server, voice does not connect rather than falling back to direct connections.
+
+To check a TURN setup end to end, run the app with your TURN variables and
+`VOICE_RELAY_ONLY=true`, then:
+
+```bash
+E2E_EXPECT_RELAY=1 npx playwright test tests/e2e/voice-relay.spec.ts
+```
+
+Two browsers join voice and the test asserts that both ends of the connected
+candidate pair are relay candidates. This has been run against a local TURN
+server using the same shared-secret scheme as coturn (pion/turn's TURN REST
+handler); it has not been run against coturn itself or across real NATs.
 
 Voice is a mesh: each person sends audio to every other person with voice on.
 That is fine for small groups (the realtime service caps rooms at 32 people;
@@ -222,6 +239,33 @@ voice is practical up to roughly 8 speakers).
   counts, rate-limit rejections and maintenance actions (admins only)
 - Logs are JSON lines on stdout; ship them to your log platform. No error
   tracking service is integrated.
+
+## Capacity
+
+Measured with `realtime/load-test.ts` against the production bundle of the
+realtime service on a 4-core machine (the load generator ran on the same
+machine, so these are conservative). Every simulated visitor was moving and
+sending a pose every 80 ms, the rate of a walking browser.
+
+| Scenario | Connections | Server CPU (one core) | Memory | Outbound | Delay p50 / p95 / p99 |
+| --- | --- | --- | --- | --- | --- |
+| 1 museum × 32 visitors | 32 | 6% | 83 MB | 5.3 Mbit/s | 8 / 82 / 84 ms |
+| 50 museums × 10 | 500 | 24% | 108 MB | 26.5 Mbit/s | 37 / 83 / 89 ms |
+| 100 museums × 10 | 1,000 | 44% | 136 MB | 52.5 Mbit/s | 53 / 86 / 96 ms |
+| 30 museums × 32 | 960 | 50% | 137 MB | 156.5 Mbit/s | 47 / 96 / 110 ms |
+
+No connection was dropped. Delay includes the deliberate 80 ms batching
+window. Bandwidth grows with the square of a museum's crowd (each visitor
+receives everyone else's movement): about 160 kbit/s down per visitor in a full
+museum of 32, so plan network capacity before CPU. Idle visitors send almost
+nothing (a keep-alive pose per second).
+
+Reproduce:
+
+```bash
+REALTIME_TRUST_PROXY=true REALTIME_PORT=4101 REALTIME_TICKET_SECRET=… node dist/realtime/server.mjs &
+REALTIME_TICKET_SECRET=… npx tsx realtime/load-test.ts --url ws://127.0.0.1:4101 --rooms 50 --per-room 10 --seconds 30 --pid $!
+```
 
 ## Scaling notes
 

@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/database/prisma";
 import { deleteAllMuseumsOwnedBy, createMuseum, deleteMuseum, getDashboard, updateMuseum } from "@/services/museum-service";
 import { placeFrame } from "@/services/photo-placement-service";
 import { createRoom, deleteRoom, reorderRooms, updateRoom, findInvalidFrames } from "@/services/room-service";
 import { getScene } from "@/services/scene-service";
+import { processDeletionQueue, storage } from "@/services/storage";
 import { validateLayout } from "@/features/rooms/geometry";
 import { addMember, createUser, resetDatabase } from "../helpers/factories";
 
@@ -80,13 +81,20 @@ describe("museums", () => {
     expect(await prisma.museum.count()).toBe(0);
   });
 
-  it("queues every stored file when an account's museums are deleted", async () => {
+  it("deletes every stored file when an account's museums are deleted", async () => {
     const owner = await createUser();
     const m = await createMuseum(owner, { name: "M", description: "", templateId: "minimal-white" }, "en");
-    await photoRow(m.id, owner.id);
+    const photo = await photoRow(m.id, owner.id);
+    const keys = [photo.storageKey, photo.largeKey, photo.mediumKey, photo.thumbnailKey];
+    for (const key of keys) await storage().put(key, Buffer.from("x"), "image/webp");
     await deleteAllMuseumsOwnedBy(owner.id);
     expect(await prisma.museum.count()).toBe(0);
-    expect(await prisma.storageDeletion.count()).toBe(4);
+    // The queue also starts in the background; draining it here makes the outcome deterministic.
+    await processDeletionQueue();
+    await vi.waitFor(async () => {
+      expect(await prisma.storageDeletion.count()).toBe(0);
+      for (const key of keys) expect(await storage().head(key)).toBeNull();
+    });
   });
 });
 

@@ -73,13 +73,13 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
         </SheetHeader>
         <div className="grid gap-3 px-5">
           <div className="relative">
-            <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ivory/50" aria-hidden="true" />
+            <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ivory/60" aria-hidden="true" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("museum.photos.search")}
               aria-label={t("museum.photos.search")}
-              className="border-white/15 bg-white/5 ps-9 text-ivory placeholder:text-ivory/45"
+              className="border-white/15 bg-white/5 ps-9 text-ivory placeholder:text-ivory/60"
               data-testid="photos-search"
             />
           </div>
@@ -143,7 +143,7 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
                               </button>
                             )}
                           </div>
-                          <p className="text-xs text-ivory/55">
+                          <p className="text-xs text-ivory/60">
                             {photo.takenAt ? formatDate(photo.takenAt) : ""}
                             {!frameId && ` ${t("museum.list.notHung")}`}
                           </p>

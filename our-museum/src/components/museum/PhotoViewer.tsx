@@ -315,13 +315,13 @@ export function PhotoViewer(props: Props) {
             <p id="viewer-caption" className="text-sm leading-relaxed text-ivory/75">
               {photo.caption}
               {photo.takenAt && (
-                <span className="block text-ivory/55">
+                <span className="block text-ivory/60">
                   {t("museum.viewer.takenOn", { date: formatDate(photo.takenAt, { dateStyle: "long" }) })}
                 </span>
               )}
             </p>
             {actions && <div className="mt-1 flex flex-wrap items-center justify-center gap-2">{actions}</div>}
-            <p className="hidden text-xs text-ivory/40 sm:block">{t("museum.viewer.keyboardHint")}</p>
+            <p className="hidden text-xs text-ivory/60 sm:block">{t("museum.viewer.keyboardHint")}</p>
           </footer>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

@@ -66,7 +66,7 @@ export function ToursPanel({ scene, hooks }: { scene: SceneData; hooks: TourHook
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-display text-xl leading-tight">{tour.name}</h3>
-                    <p className="text-xs text-ivory/55">{t("museum.tours.stops", { count: stops.length })}</p>
+                    <p className="text-xs text-ivory/60">{t("museum.tours.stops", { count: stops.length })}</p>
                     {tour.description && <p className="mt-1 line-clamp-2 text-sm text-ivory/70">{tour.description}</p>}
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export function TourCard({ scene, hooks, onView }: { scene: SceneData; hooks: To
         <header className="flex items-center gap-2 text-xs">
           <RouteIcon className="size-4 text-gold" aria-hidden="true" />
           <span className="truncate font-medium">{tour.name}</span>
-          <span className="text-ivory/55">· {t("museum.tours.stopOf", { current: index + 1, total: stops.length })}</span>
+          <span className="text-ivory/60">· {t("museum.tours.stopOf", { current: index + 1, total: stops.length })}</span>
           <button type="button" onClick={end} className="ms-auto grid size-7 place-items-center rounded-full hover:bg-white/10" aria-label={following ? t("museum.tours.leave") : t("museum.tours.end")} data-testid="tour-end">
             <XIcon className="size-4" aria-hidden="true" />
           </button>

@@ -73,6 +73,8 @@ cross-museum id substitution for frames.
   end-to-end encryption as a product guarantee, and the app does not claim it.
   The microphone is only requested after an explicit click, and
   `Permissions-Policy` limits it to this origin.
+- `VOICE_RELAY_ONLY=true` routes all voice through TURN so participants never
+  see each other's IP addresses (fails closed without TURN).
 - TURN credentials are minted per user with a short lifetime from
   `TURN_SHARED_SECRET` (coturn REST API); the secret never reaches the client.
 

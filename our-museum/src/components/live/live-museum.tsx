@@ -67,6 +67,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
         const v = useVoiceStore.getState();
         return { status: v.status, muted: v.muted, listenOnly: v.listenOnly, speaking: v.speaking, error: v.error, connected: v.connected };
       },
+      voiceRoutes: () => voiceRef.current?.routes() ?? [],
       tour: () => ({ local: useMuseumStore.getState().tour, live: useRealtimeStore.getState().tour }),
       peers: () => Object.values(useRealtimeStore.getState().peers).map((p) => ({ name: p.name, voice: p.voice, viewing: p.viewing })),
     };
@@ -187,7 +188,7 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
               <Label htmlFor="auto-follow" className="text-ivory/90">
                 {t("museum.live.autoFollow")}
               </Label>
-              <p className="text-xs text-ivory/55">{t("museum.live.autoFollowHint")}</p>
+              <p className="text-xs text-ivory/60">{t("museum.live.autoFollowHint")}</p>
             </div>
             <Switch id="auto-follow" checked={autoFollow} onCheckedChange={(v) => setPrefs({ autoFollowShared: v })} />
           </div>

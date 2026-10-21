@@ -60,10 +60,11 @@ Listed plainly so nobody mistakes them for finished:
    with authentication (English and Arabic messages, a full password reset by
    email, header-injection attempts, a bounced invitation). Not tried: TLS
    (`smtps://` / STARTTLS) and real providers' deliverability (SPF/DKIM).
-3. **Voice on real networks** — tested only between browser sessions on one
-   machine with fake microphones. TURN (coturn REST credentials) is
-   implemented but untested; Safari/iOS voice is untested. Voice is a mesh,
-   practical for roughly 8 speakers.
+3. **Voice on real networks** — tested between browser sessions on one
+   machine with fake microphones, both direct and relay-only through a local
+   TURN server that checks the app's coturn-style shared-secret credentials.
+   Not tested: coturn itself, real NATs and mobile networks, Safari/iOS.
+   Voice is a mesh, practical for roughly 8 speakers.
 4. **Cloud object storage** — the S3 driver passed against an S3-compatible
    mock; AWS S3/R2 and browser uploads through bucket CORS have not been tried.
 5. **Scaling out** — one realtime instance only (rooms are in memory); API and
@@ -81,16 +82,19 @@ Listed plainly so nobody mistakes them for finished:
    tabs and the museum's panels and photo viewer, in English and Arabic.
    Automated rules catch only part of the picture: no screen-reader session
    (VoiceOver/NVDA/TalkBack) or formal WCAG conformance review has been done.
-9. **Large museums** — texture budgets and lazy loading are in place, but no
-   load test with hundreds of photos or many simultaneous visitors was run.
+9. **Scale** — the realtime service was load-tested up to 1,000 moving
+   visitors on one instance (see DEPLOYMENT.md#capacity). Not tested: browser
+   performance with hundreds of photos in one museum (texture budgets and lazy
+   loading exist), and load on the web app and database.
 10. **Monitoring and backups** — JSON logs, health endpoints and the admin page
     only; no error-tracking service, alerting or automated backups.
 11. **Content features not built** — narrated (audio) tours, video uploads,
     comments/guestbook, importing from photo services, custom 3D model
     upload for avatars or decor, and museum export/download.
-12. **E2E in CI** — GitHub Actions runs lint, typecheck, unit + integration
-    tests and a secret-free build on every push; the Playwright suite (3D in
-    software WebGL, ~3 minutes) still runs only locally.
+12. **CI coverage** — GitHub Actions runs lint, typecheck, unit +
+    integration tests, a secret-free build and the Playwright suite on every
+    push. The opt-in checks (S3, TURN relay) need external services and run
+    only when configured.
 
 ## Security follow-ups
 

@@ -75,7 +75,7 @@ export function MobileControls({ canInteract, onInteract }: { canInteract: boole
             setSprint(!sprint);
           }}
           className={cn(
-            "grid size-12 place-items-center rounded-full border border-white/15 bg-ink/45 text-ivory backdrop-blur-sm",
+            "grid size-12 place-items-center rounded-full border border-white/15 bg-ink/65 text-ivory backdrop-blur-sm",
             sprint && "border-gold bg-gold/30",
           )}
         >
@@ -86,7 +86,7 @@ export function MobileControls({ canInteract, onInteract }: { canInteract: boole
           aria-label={t("museum.mobile.interact")}
           disabled={!canInteract}
           onClick={onInteract}
-          className="grid size-16 place-items-center rounded-full border border-gold/60 bg-ink/55 text-gold backdrop-blur-sm transition disabled:opacity-35"
+          className="grid size-16 place-items-center rounded-full border border-gold/60 bg-ink/70 text-gold backdrop-blur-sm transition disabled:opacity-35"
           data-testid="mobile-interact"
         >
           <EyeIcon className="size-6" aria-hidden="true" />

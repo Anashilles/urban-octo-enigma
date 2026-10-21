@@ -53,6 +53,8 @@ const serverEnvSchema = z.object({
   STUN_URLS: csv,
   TURN_URLS: csv,
   TURN_SHARED_SECRET: z.string().optional(),
+  // Send all voice through TURN so visitors never learn each other's IP addresses.
+  VOICE_RELAY_ONLY: bool,
 
   CRON_SECRET: z.string().min(16).optional(),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),

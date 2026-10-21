@@ -154,7 +154,7 @@
     @apply tracking-normal text-sm;
   }
   .glass-dark {
-    background: color-mix(in oklab, var(--ink) 82%, transparent);
+    background: color-mix(in oklab, var(--ink) 90%, transparent); /* text at ≥60% ivory stays ≥4.5:1 even over white walls */
     backdrop-filter: blur(10px) saturate(1.1);
     -webkit-backdrop-filter: blur(10px) saturate(1.1);
   }

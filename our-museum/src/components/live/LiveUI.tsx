@@ -137,7 +137,7 @@ export function PeopleSheet({ scene, actions, voiceSection }: { scene: SceneData
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                         {p.name}
-                        {p.guest && <span className="text-xs text-ivory/50">· {t("museum.live.guest")}</span>}
+                        {p.guest && <span className="text-xs text-ivory/60">· {t("museum.live.guest")}</span>}
                         {p.voice.on && !p.voice.muted && <MicIcon className="size-3.5 text-gold" aria-label={t("museum.live.talking")} />}
                       </p>
                       <p className="truncate text-xs text-ivory/60">
