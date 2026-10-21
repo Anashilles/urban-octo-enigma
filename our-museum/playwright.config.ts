@@ -18,7 +18,8 @@ export default defineConfig({
   workers: 1,
   timeout: 180_000,
   expect: { timeout: 20_000 },
-  retries: process.env.CI ? 1 : 0,
+  // No retries: a flaky test should fail loudly rather than pass on a second try.
+  retries: 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",

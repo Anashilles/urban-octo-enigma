@@ -47,3 +47,54 @@ jobs:
       - run: npm test
       - name: Production build (no secrets)
         run: npm run build && npm run realtime:build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: our-museum
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: museum
+          POSTGRES_PASSWORD: museum
+          POSTGRES_DB: our_museum
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U museum -d our_museum"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://museum:museum@localhost:5432/our_museum
+      APP_URL: http://localhost:3000
+      REALTIME_PUBLIC_URL: ws://localhost:4001
+      REALTIME_INTERNAL_URL: http://localhost:4001
+      NEXT_PUBLIC_ENABLE_TEST_HOOKS: "true"
+      AUTH_RATE_LIMIT: "off"
+      AUTH_REQUIRE_EMAIL_VERIFICATION: "false"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: our-museum/package-lock.json
+      - run: npm ci
+      - name: Throwaway secrets for this run
+        run: |
+          echo "BETTER_AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "REALTIME_TICKET_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - run: npx prisma migrate deploy
+      - run: npx playwright install --with-deps chromium
+      # Playwright starts `npm run dev` and `npm run realtime` (see playwright.config.ts).
+      - run: npx playwright test
+      - if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: |
+            our-museum/playwright-report
+            our-museum/test-results
+          retention-days: 7
