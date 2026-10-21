@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { createMuseum, quietContext, signUp, uploadAndHang, waitForMuseum } from "./helpers";
 
 test("invite a guest, see each other, and look at photographs together", async ({ browser }) => {
+  // Two museums render in software WebGL at once; on CI runners this takes about twice as long as locally.
+  test.slow();
   const ownerCtx = await quietContext(browser);
   const owner = await ownerCtx.newPage();
   await signUp(owner, "Owner");
