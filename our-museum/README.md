@@ -16,7 +16,7 @@ English and Arabic (full right-to-left layout) are built in.
 | --- | --- |
 | Museums | Four architectural templates, multiple rooms, theme (wall colour, floor, lighting, frame style), privacy switches |
 | Photos | Direct uploads (JPEG, PNG, WebP, HEIC), metadata and GPS stripped, 3 web derivatives, collections, favourites, timeline by date taken |
-| Hanging | Wall editor with snapping and overlap/doorway checks, and **Place on Wall** while walking through the museum |
+| Hanging | Wall editor with snapping and overlap/doorway checks; **Place on Wall** while walking through the museum; adding a photo from your device without leaving the museum; changing the picture in a frame that already hangs |
 | Exploring | First/third-person walking, keyboard, mouse and touch controls, photo viewer with zoom/pan, guided tours, generative ambient sound |
 | Narrated tours | Owners and editors record a voice note for each tour stop in the browser; it plays when visitors (or a live tour's followers) arrive |
 | Avatars | Procedural rigged avatars (body, skin, hair, clothes, accessories) with idle/walk/run/wave animations |

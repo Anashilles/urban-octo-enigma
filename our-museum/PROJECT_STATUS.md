@@ -6,8 +6,12 @@ Our Museum is a working application: every feature below runs against the
 real backend (PostgreSQL, storage, realtime service). Sample data is used only
 for the public `/demo` museum, the optional seed and automated tests.
 
-**Not deployed.** Nothing has been published to a public URL. The Docker
+**Not deployed.** The app has not been published to a public URL. The Docker
 stack has been built and run locally (see [Verification](#verification)).
+A static copy of the public demo museum (3D walk, sample art, adding and
+hanging your own photos kept only in the browser) was published as a private
+claude.ai page for previewing; it has no server, accounts or storage and is
+not a deployment of the app.
 
 ## Build phases
 
@@ -21,6 +25,7 @@ stack has been built and run locally (see [Verification](#verification)).
 | + | Comments on photographs and a museum guestbook (live, moderated, switchable) | Done |
 | + | Museum export: ZIP with originals, manifest and an offline gallery page | Done |
 | + | Narrated tours: a voice note recorded in the browser for each stop, played on arrival (solo and live tours), included in exports | Done (recording verified in Chromium only) |
+| + | Inside the museum: add a photo from your device and hang it straight away; change the picture in a hung frame (from the library or the device) | Done |
 
 ## Verification
 

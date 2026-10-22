@@ -60,6 +60,8 @@ export const updateFrameSchema = z
     style: z.enum(FRAME_STYLES).optional(),
     options: frameOptionsSchema.optional(),
     caption: z.string().trim().max(120).nullable().optional(),
+    /** Hang a different photograph in this frame (same spot; the frame follows its shape). */
+    photoId: id.optional(),
     allowOverlap: z.boolean().optional(),
     /** The frame version the edit was based on; a newer stored version means someone else changed it. */
     expectedVersion: z.number().int().positive().optional(),

@@ -24,6 +24,12 @@ function heightFor(width: number, photo: { width: number; height: number }) {
   return round3(width * (photo.height / photo.width));
 }
 
+/** Width for a new photo in an existing frame: its longest side stays as long as the old frame's. */
+function widthForSwap(frame: { width: number; height: number }, photo: { width: number; height: number }) {
+  const longest = Math.max(frame.width, frame.height);
+  return round3(photo.width >= photo.height ? longest : longest * (photo.width / photo.height));
+}
+
 /** Someone else changed the frame since the editor loaded it. Details carry the current version. */
 function staleFrame(current: Parameters<typeof frameToResponse>[0]) {
   return errors.conflict("This frame was just changed by someone else.", { reason: "stale_frame", frame: frameToResponse(current) });
@@ -115,14 +121,16 @@ export async function updateFrame(userId: string, museumId: string, frameId: str
     const existing = await tx.photoFrame.findFirst({ where: { id: frameId, museumId }, include: { wall: true, photo: true } });
     if (!existing) throw errors.notFound("Frame not found");
     if (patch.expectedVersion !== undefined && patch.expectedVersion !== existing.version) throw staleFrame(existing);
+    const photo = patch.photoId && patch.photoId !== existing.photoId ? await tx.photo.findFirst({ where: { id: patch.photoId, museumId } }) : existing.photo;
+    if (!photo) throw errors.notFound("Photo not found");
     const roomId = patch.roomId ?? existing.roomId;
     const wallKey = (patch.wallKey ?? existing.wall.wallKey) as WallKey;
-    const width = patch.width ?? existing.width;
+    const width = patch.width ?? (photo.id !== existing.photoId ? widthForSwap(existing, photo) : existing.width);
     const candidate: FramePlacement = {
       u: round3(patch.u ?? existing.positionU),
       v: round3(patch.v ?? existing.positionV),
       width: round3(width),
-      height: heightFor(width, existing.photo),
+      height: heightFor(width, photo),
       rotation: round3(patch.rotation ?? existing.rotation),
       style: (patch.style ?? existing.frameStyle) as FrameStyle,
       options: (patch.options ?? existing.frameOptions) as FrameOptions,
@@ -133,6 +141,7 @@ export async function updateFrame(userId: string, museumId: string, frameId: str
       where: { id: frameId, version: existing.version },
       data: {
         version: { increment: 1 },
+        photoId: photo.id,
         roomId,
         wallId: wall.id,
         positionU: candidate.u,
@@ -148,7 +157,10 @@ export async function updateFrame(userId: string, museumId: string, frameId: str
     });
     if (!written.count) throw staleFrame(await tx.photoFrame.findUniqueOrThrow({ where: { id: frameId }, include: { wall: true } }));
     await bumpLayoutVersion(tx, museumId);
-    await recordEvent({ museumId, actorId: userId, eventType: "frame.updated", entityId: frameId }, tx);
+    await recordEvent(
+      { museumId, actorId: userId, eventType: "frame.updated", entityId: frameId, metadata: photo.id !== existing.photoId ? { photoId: photo.id } : undefined },
+      tx,
+    );
     return tx.photoFrame.findUniqueOrThrow({ where: { id: frameId } });
   });
   notifyMuseumChanged(museumId, "layout", userId);

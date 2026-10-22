@@ -27,6 +27,8 @@ import { useVoice } from "./use-voice";
 import { VoiceButton, VoiceSection } from "./VoiceUI";
 import { CommentsButton, GuestbookPanel, PhotoComments } from "./Comments";
 import type { VoiceManager } from "@/features/voice/voice-manager";
+import { isAcceptedFile, uploadPhoto } from "@/features/photos/upload-queue";
+import type { UploadPhoto } from "@/components/museum/AddPhoto";
 
 export default function LiveMuseum({ initialScene }: { initialScene: SceneData }) {
   const t = useT();
@@ -119,6 +121,40 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
     [hanging, museumId, refresh, t, errorText],
   );
 
+  /** Upload from the device without leaving the museum; the scene is refreshed before placing it. */
+  const uploadFromDevice = useCallback<UploadPhoto>(
+    async (file, onProgress) => {
+      if (!isAcceptedFile(file)) {
+        toast.error(t("errors.UNSUPPORTED_MEDIA_TYPE"));
+        return null;
+      }
+      try {
+        const photoId = await uploadPhoto(museumId, file, { onProgress });
+        await refresh();
+        return photoId;
+      } catch (e) {
+        toast.error(t(errorKey(e)));
+        return null;
+      }
+    },
+    [museumId, refresh, t],
+  );
+
+  const changeFramePhoto = useCallback(
+    async (frameId: string, photoId: string) => {
+      try {
+        await api(`/api/museums/${museumId}/frames/${frameId}`, { method: "PATCH", body: { photoId } });
+        await refresh();
+        toast.success(t("museum.addPhoto.changed"));
+        return true;
+      } catch (e) {
+        toast.error(errorText(e));
+        return false;
+      }
+    },
+    [museumId, refresh, t, errorText],
+  );
+
   const toggleFavorite = useCallback(
     async (photoId: string, favorite: boolean) => {
       // Optimistic: flip the heart immediately, then reconcile with the server.
@@ -146,6 +182,8 @@ export default function LiveMuseum({ initialScene }: { initialScene: SceneData }
       showInviteHint={scene.viewer.permissions["invitation.manage"]}
       onPhotoTextureError={refresh}
       onToggleFavorite={(photoId, favorite) => void toggleFavorite(photoId, favorite)}
+      onUploadPhoto={perms["photo.upload"] ? uploadFromDevice : undefined}
+      onChangeFramePhoto={perms["frame.edit"] ? changeFramePhoto : undefined}
       onPlacePhoto={
         canEdit
           ? (photoId) => {

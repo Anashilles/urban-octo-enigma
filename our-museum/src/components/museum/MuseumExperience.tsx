@@ -17,6 +17,7 @@ import { Hud, toggleFullscreen, useIsCoarse } from "./Hud";
 import { MobileControls } from "./MobileControls";
 import { goToFrame, returnToSavedPose } from "./navigation";
 import { PhotoList } from "./PhotoList";
+import { ChangePictureButton, type UploadPhoto } from "./AddPhoto";
 import { PhotosPanel } from "./PhotosPanel";
 import { PhotoViewer, type SharedView } from "./PhotoViewer";
 import { AmbientAudio } from "./AmbientAudio";
@@ -52,6 +53,10 @@ export interface MuseumExperienceProps {
   settingsExtra?: ReactNode;
   showInviteHint?: boolean;
   onPlacePhoto?: (photoId: string) => void;
+  /** Adds a photo from the visitor's device; see UploadPhoto. */
+  onUploadPhoto?: UploadPhoto;
+  /** Hangs another photo in an existing frame; resolves to whether it worked. */
+  onChangeFramePhoto?: (frameId: string, photoId: string) => Promise<boolean>;
   onToggleFavorite?: (photoId: string, favorite: boolean) => void;
   onViewerNavigate?: (photoId: string) => void;
   onViewerClose?: () => void;
@@ -121,6 +126,10 @@ export function MuseumExperience(props: MuseumExperienceProps) {
   if (!webgl) return <WebGLFallback scene={scene} exitHref={props.exitHref} onRetry={() => setWebgl(detectWebGL())} />;
 
   const viewerPhotoId = viewer?.photoId;
+  // The frame being looked at: the one the viewer opened on, or wherever this photo hangs after browsing.
+  const viewerFrameId = viewerPhotoId
+    ? (scene.frames.find((f) => f.id === viewer?.frameId && f.photoId === viewerPhotoId) ?? scene.frames.find((f) => f.photoId === viewerPhotoId))?.id
+    : undefined;
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-ink" data-testid="museum-experience">
@@ -173,6 +182,7 @@ export function MuseumExperience(props: MuseumExperienceProps) {
           setPanel(null);
         }}
         onPlace={props.onPlacePhoto}
+        onUpload={props.onUploadPhoto}
         onToggleFavorite={props.onToggleFavorite}
       />
 
@@ -233,7 +243,29 @@ export function MuseumExperience(props: MuseumExperienceProps) {
             closeViewer();
             props.onViewerClose?.();
           }}
-          actions={props.viewerActions?.(viewerPhotoId)}
+          actions={
+            <>
+              {props.viewerActions?.(viewerPhotoId)}
+              {props.onChangeFramePhoto && viewerFrameId && (
+                <ChangePictureButton
+                  frameId={viewerFrameId}
+                  currentPhotoId={viewerPhotoId}
+                  photos={scene.photos}
+                  onUpload={props.onUploadPhoto}
+                  onChange={async (frameId, photoId) => {
+                    const ok = await props.onChangeFramePhoto!(frameId, photoId);
+                    // Keep looking at the same frame, now showing the new photo.
+                    const v = useMuseumStore.getState().viewer;
+                    if (ok && v) {
+                      const sequence = [...new Set(v.sequence.map((id) => (id === viewerPhotoId ? photoId : id)))];
+                      useMuseumStore.setState({ viewer: { ...v, photoId, frameId, sequence } });
+                    }
+                    return ok;
+                  }}
+                />
+              )}
+            </>
+          }
           sharedBanner={props.sharedBanner}
           navigationLocked={props.viewerLocked}
           syncedView={props.viewerSyncedView}

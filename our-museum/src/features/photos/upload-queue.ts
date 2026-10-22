@@ -53,14 +53,14 @@ export function isAcceptedFile(file: File) {
   return (ACCEPTED_MIME_TYPES as readonly string[]).includes(file.type) || (ACCEPTED_EXTENSIONS as readonly string[]).some((e) => name.endsWith(e));
 }
 
-function put(id: string, target: UploadTarget, file: File) {
+function put(id: string, target: UploadTarget, file: File, onProgress: (fraction: number) => void) {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhrs.set(id, xhr);
     xhr.open(target.method, target.url);
     for (const [k, v] of Object.entries(target.headers)) xhr.setRequestHeader(k, v);
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) patch(id, { progress: e.loaded / e.total });
+      if (e.lengthComputable) onProgress(e.loaded / e.total);
     };
     xhr.onload = () => {
       xhrs.delete(id);
@@ -87,23 +87,54 @@ function put(id: string, target: UploadTarget, file: File) {
   });
 }
 
+export interface UploadHooks {
+  collectionId?: string | null;
+  onSlot?: (uploadId: string) => void;
+  onProgress?: (fraction: number) => void;
+  onProcessing?: () => void;
+  /** Checked after the slot is granted; returning true stops before sending the file. */
+  cancelled?: () => boolean;
+}
+
+/**
+ * Uploads one file: asks for a signed slot, sends the bytes straight to
+ * storage, then has the server check, strip metadata and resize it. Resolves
+ * to the new photo's id, or null if cancelled before sending.
+ */
+export async function uploadPhoto(museumId: string, file: File, hooks: UploadHooks = {}, key: string = crypto.randomUUID()) {
+  const { uploadId, target } = await api<{ uploadId: string; target: UploadTarget }>(`/api/museums/${museumId}/uploads`, {
+    method: "POST",
+    body: { filename: file.name || "photo", mimeType: file.type, size: file.size },
+  });
+  hooks.onSlot?.(uploadId);
+  if (hooks.cancelled?.()) return null;
+  await put(key, target, file, (p) => hooks.onProgress?.(p));
+  hooks.onProcessing?.();
+  const { photoId } = await api<{ photoId: string }>(`/api/uploads/${uploadId}/complete`, {
+    method: "POST",
+    body: hooks.collectionId ? { collectionId: hooks.collectionId } : {},
+  });
+  return photoId;
+}
+
 async function run(item: UploadItem) {
   const { museumId, collectionId } = useUploadQueue.getState();
   if (!museumId) return;
   patch(item.id, { status: "uploading", progress: 0, error: undefined });
   try {
-    const { uploadId, target } = await api<{ uploadId: string; target: UploadTarget }>(`/api/museums/${museumId}/uploads`, {
-      method: "POST",
-      body: { filename: item.name, mimeType: item.file.type, size: item.size },
-    });
-    patch(item.id, { uploadId });
-    if (useUploadQueue.getState().items.find((i) => i.id === item.id)?.status === "cancelled") return;
-    await put(item.id, target, item.file);
-    patch(item.id, { status: "processing", progress: 1 });
-    const { photoId } = await api<{ photoId: string }>(`/api/uploads/${uploadId}/complete`, {
-      method: "POST",
-      body: collectionId ? { collectionId } : {},
-    });
+    const photoId = await uploadPhoto(
+      museumId,
+      item.file,
+      {
+        collectionId,
+        onSlot: (uploadId) => patch(item.id, { uploadId }),
+        onProgress: (progress) => patch(item.id, { progress }),
+        onProcessing: () => patch(item.id, { status: "processing", progress: 1 }),
+        cancelled: () => useUploadQueue.getState().items.find((i) => i.id === item.id)?.status === "cancelled",
+      },
+      item.id,
+    );
+    if (!photoId) return;
     patch(item.id, { status: "done", photoId });
     useUploadQueue.getState().onCreated?.(photoId);
   } catch (e) {

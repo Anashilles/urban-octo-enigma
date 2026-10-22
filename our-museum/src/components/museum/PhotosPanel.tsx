@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { CompassIcon, EyeIcon, FrameIcon, HeartIcon, MapPinIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import type { SceneData } from "@/features/museums/scene-types";
 import { useI18n } from "@/i18n/client";
 import { cn } from "@/lib/utils";
+import { DevicePhotoButton, type UploadPhoto } from "./AddPhoto";
 import { photoImageUrl } from "./photo-urls";
 import { usePanelExitFocus } from "./focus";
 
@@ -21,6 +23,8 @@ interface Props {
   onGoTo: (frameId: string) => void;
   onPlace?: (photoId: string) => void;
   onToggleFavorite?: (photoId: string, favorite: boolean) => void;
+  /** Adds a photo from the visitor's device (people who may upload). */
+  onUpload?: UploadPhoto;
 }
 
 /** When a photo was taken, or added if the date is unknown (ISO strings sort by time). */
@@ -29,7 +33,7 @@ function photoDate(p: { takenAt: string | null; createdAt: string }) {
 }
 
 /** In-museum collection browser: search, filter by collection, view, locate, go to or place a photo. */
-export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, onPlace, onToggleFavorite }: Props) {
+export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, onPlace, onToggleFavorite, onUpload }: Props) {
   const exitFocus = usePanelExitFocus();
   const { t, formatDate } = useI18n();
   const [query, setQuery] = useState("");
@@ -72,6 +76,19 @@ export function PhotosPanel({ scene, open, onClose, onView, onLocate, onGoTo, on
           <SheetDescription className="sr-only">{t("museum.photos.search")}</SheetDescription>
         </SheetHeader>
         <div className="grid gap-3 px-5">
+          {onUpload && (
+            <DevicePhotoButton
+              onUpload={onUpload}
+              onAdded={(photoId) => {
+                // Straight to choosing a spot on the wall, when this visitor may hang photos.
+                if (onPlace) {
+                  toast.success(t("museum.addPhoto.addedPlace"));
+                  exitFocus.toScene();
+                  onPlace(photoId);
+                } else toast.success(t("museum.addPhoto.added"));
+              }}
+            />
+          )}
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ivory/60" aria-hidden="true" />
             <Input

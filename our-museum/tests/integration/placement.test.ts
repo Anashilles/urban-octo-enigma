@@ -31,6 +31,24 @@ async function setup() {
   return { owner, museumId: museum.id, room, photo };
 }
 
+function photoData(museumId: string, userId: string) {
+  const id = `ph${Math.random().toString(36).slice(2, 12)}`;
+  return {
+    id,
+    museumId,
+    uploadedById: userId,
+    storageKey: `k/${id}/o`,
+    largeKey: `k/${id}/l`,
+    mediumKey: `k/${id}/m`,
+    thumbnailKey: `k/${id}/t`,
+    originalFilename: "p.jpg",
+    mimeType: "image/jpeg",
+    width: 900,
+    height: 1200,
+    sizeBytes: 1,
+  };
+}
+
 const base = { wallKey: "north" as const, u: 0, v: 1.55, width: 0.9, rotation: 0, style: "white-gallery" as const, options: {} };
 
 describe("frame placement", () => {
@@ -67,6 +85,31 @@ describe("frame placement", () => {
     // Intentional overlap is allowed when explicitly requested, and recorded.
     const overlapping = await placeFrame(owner.id, museumId, { ...p, u: 0.3, allowOverlap: true });
     expect(overlapping.metadata).toMatchObject({ overlapsIntentionally: [expect.any(String)] });
+  });
+
+  it("hangs a different photograph in an existing frame", async () => {
+    const { owner, museumId, room, photo } = await setup();
+    const frame = await placeFrame(owner.id, museumId, { ...base, photoId: photo.id, roomId: room.id, u: 0.5, width: 0.9 });
+    // Portrait 900×1200 at 0.9 m wide → 1.2 m tall. A landscape 1600×900 keeps the 1.2 m longest side.
+    const wide = await prisma.photo.create({ data: { ...photoData(museumId, owner.id), width: 1600, height: 900 } });
+    const swapped = await updateFrame(owner.id, museumId, frame.id, { photoId: wide.id, expectedVersion: frame.version });
+    expect(swapped).toMatchObject({ photoId: wide.id, positionU: 0.5, positionV: 1.55, width: 1.2, height: 0.675, version: frame.version + 1 });
+    const scene = await getScene(owner, museumId);
+    expect(scene.frames[0]).toMatchObject({ id: frame.id, photoId: wide.id });
+    expect(await prisma.museumEvent.findFirst({ where: { eventType: "frame.updated", entityId: frame.id } })).toMatchObject({ metadata: { photoId: wide.id } });
+
+    // The new shape must still fit: a tall photo next to the ceiling is refused, and nothing changes.
+    const tall = await prisma.photo.create({ data: { ...photoData(museumId, owner.id), width: 300, height: 1200 } });
+    await updateFrame(owner.id, museumId, frame.id, { v: 2.5, width: 0.4 });
+    await expect(updateFrame(owner.id, museumId, frame.id, { photoId: tall.id })).rejects.toMatchObject({ code: "PLACEMENT_INVALID" });
+    expect((await prisma.photoFrame.findUniqueOrThrow({ where: { id: frame.id } })).photoId).toBe(wide.id);
+
+    // Only photographs from this museum, and only for people who may edit frames.
+    const other = await setup();
+    await expect(updateFrame(owner.id, museumId, frame.id, { photoId: other.photo.id })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const visitor = await createUser("Visitor");
+    await addMember(museumId, visitor.id, "VISITOR");
+    await expect(updateFrame(visitor.id, museumId, frame.id, { photoId: photo.id })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("moves frames between walls and validates against the destination", async () => {

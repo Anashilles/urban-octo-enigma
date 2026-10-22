@@ -76,7 +76,7 @@ export async function playerAtRest(page: Page) {
   return last;
 }
 
-async function testJpeg(hue: number) {
+export async function testJpeg(hue: number) {
   // A generated test image — never a real photograph.
   return sharp({ create: { width: 900, height: 600, channels: 3, background: { r: 60 + hue, g: 120, b: 200 - hue } } })
     .jpeg({ quality: 85 })

@@ -79,6 +79,15 @@ everyone in the museum to refetch the scene.
 Frame placement is validated on the server (`src/features/photo-placement`):
 inside the wall, clear of doorways and other frames, within size limits.
 
+Inside the museum, anyone allowed to upload (`photo.upload`) can add a photo
+from their device: the photos panel uses the same signed-upload pipeline as
+the editor (`uploadPhoto` in `src/features/photos/upload-queue.ts`), refreshes
+the scene and goes straight into placing it. Anyone allowed to edit frames
+(`frame.edit`) can hang a different photo in an existing frame from the photo
+viewer: `PATCH /frames/:id` with `photoId` keeps the frame's position and its
+longest side, gives it the new photo's proportions, and re-validates the
+placement like any other edit.
+
 ## Comments and guestbook
 
 `src/services/comment-service.ts` stores comments per photo and a guestbook per
