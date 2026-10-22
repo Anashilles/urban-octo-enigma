@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-10-21_
+_Last updated: 2026-10-22_
 
 Our Museum is a working application: every feature below runs against the
 real backend (PostgreSQL, storage, realtime service). Sample data is used only
@@ -34,9 +34,9 @@ What was actually executed (not just written):
 | Check | Result |
 | --- | --- |
 | TypeScript (`tsc --noEmit`), ESLint | Clean |
-| Vitest unit + integration (real PostgreSQL) | 152 passed in 20 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
+| Vitest unit + integration (real PostgreSQL) | 153 passed in 20 files (+3 opt-in S3 tests skipped without `S3_TEST_ENDPOINT`) |
 | S3 driver against an S3-compatible server (moto, an AWS S3 emulator) | 3 passed (opt-in test, `S3_TEST_ENDPOINT`) |
-| Playwright end to end (headless Chromium, software WebGL) | 15 passed, 1 opt-in skipped (TURN relay) — desktop + mobile projects |
+| Playwright end to end (headless Chromium, software WebGL) | 16 passed, 1 opt-in skipped (TURN relay) — desktop + mobile projects |
 | `npm audit --omit=dev` | 0 vulnerabilities |
 | GitHub Actions (`.github/workflows/our-museum.yml`) | Green: lint, typecheck, unit + integration tests against a PostgreSQL service, production build, Playwright suite |
 | Production build without any secrets present | Succeeds |
@@ -51,7 +51,9 @@ find the photos in 3D after a reload; avatar customisation; two browsers —
 invite a guest, see each other, Look Together; comments and the guestbook
 live between two browsers; downloading an export and opening it offline;
 recording a tour narration with Chromium's fake microphone and hearing it
-play on the tour; phone layout with touch controls.
+play on the tour; adding a photo from the device inside the museum, hanging
+it, and changing a frame's picture from the library and from the device;
+phone layout with touch controls.
 
 Checked by hand in browsers during development: placing photos while
 walking (overlap and doorway refusal), avatar walk/run/wave and third person,

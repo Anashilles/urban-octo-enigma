@@ -37,6 +37,8 @@ test("demo museum: walk with the keyboard, open a photograph and close it", asyn
   await page.getByTestId("photo-goto").first().click();
   // Focus moves straight to the scene, so keys work even while the panel slides away.
   await expect(page.getByTestId("museum-canvas")).toBeFocused();
+  // Let the walk finish first: mid-glide, the photo in front of you changes from frame to frame.
+  await playerAtRest(page);
   await page.waitForFunction(() => (window as unknown as { __museum: { focused: () => string | null } }).__museum.focused() !== null, undefined, { timeout: 30_000 });
   await page.keyboard.press("e");
   const viewer = page.getByTestId("photo-viewer");
