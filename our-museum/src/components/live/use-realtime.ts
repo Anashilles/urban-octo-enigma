@@ -137,6 +137,10 @@ export function useRealtime(
         if (next && next.id !== before?.id) {
           if (next.leaderId === s.selfId) {
             useRealtimeStore.setState({ following: true });
+            // Browsing before the server confirmed us as leader sent nothing (only a leader's
+            // moves are shared), so catch everyone up with the photo we're looking at now.
+            const viewer = museum.viewer;
+            if (viewer?.shared && viewer.photoId !== next.photoId) clientRef.current?.send({ t: "shared.update", photoId: viewer.photoId });
             return;
           }
           // Someone else started: follow automatically unless busy or opted out.
@@ -212,7 +216,10 @@ export function useRealtime(
       const s = useRealtimeStore.getState();
       if (!v.pending || !s.shared || !isLeader()) return;
       v.last = performance.now();
-      send({ t: "shared.update", photoId: s.shared.photoId, zoom: v.pending.zoom, panX: v.pending.panX, panY: v.pending.panY });
+      // The photo on the leader's screen, not the last one the server echoed: right after
+      // "next", the echo may still be on its way, and sending it would turn everyone back.
+      const photoId = useMuseumStore.getState().viewer?.photoId ?? s.shared.photoId;
+      send({ t: "shared.update", photoId, zoom: v.pending.zoom, panX: v.pending.panX, panY: v.pending.panY });
       v.pending = null;
     };
     return {

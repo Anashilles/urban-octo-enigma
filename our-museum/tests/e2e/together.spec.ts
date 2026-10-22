@@ -33,11 +33,15 @@ test("invite a guest, see each other, and look at photographs together", async (
   // Look Together: the owner opens a photograph for both.
   await owner.getByTestId("hud-photos").click();
   await owner.getByTestId("photo-view").first().click();
+  const first = await owner.getByTestId("viewer-title").textContent();
   await owner.getByTestId("look-together").click();
+  // Browsing on at once, before the server has confirmed the shared view, still takes the guest along.
+  await owner.getByTestId("viewer-next").click();
+  await expect(owner.getByTestId("viewer-title")).not.toHaveText(first ?? "");
   await expect(guest.getByTestId("viewer-shared-bar")).toBeVisible();
   await expect(guest.getByTestId("viewer-title")).toHaveText((await owner.getByTestId("viewer-title").textContent()) ?? "");
-  await owner.getByTestId("viewer-next").click();
-  await expect(guest.getByTestId("viewer-title")).toHaveText((await owner.getByTestId("viewer-title").textContent()) ?? "");
+  await owner.getByTestId("viewer-prev").click();
+  await expect(guest.getByTestId("viewer-title")).toHaveText(first ?? "");
   // Followers can't steer.
   await expect(guest.getByTestId("viewer-next")).toHaveCount(0);
   await owner.getByTestId("shared-leave").click();
