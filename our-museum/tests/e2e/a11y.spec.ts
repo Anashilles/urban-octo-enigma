@@ -7,7 +7,24 @@ import { createMuseum, prepare, signUp, waitForMuseum } from "./helpers";
  * on the main pages and museum states, in English and Arabic. Automated rules
  * catch only part of what matters; they complement manual testing.
  */
+/**
+ * Panels and dialogs fade and slide in; measured mid-animation, half-transparent
+ * text fails contrast that the open panel passes. Wait until they have settled.
+ */
+async function panelsSettled(page: Page) {
+  await page.waitForFunction(
+    () =>
+      document.getAnimations().every((a) => {
+        const target = (a.effect as KeyframeEffect | null)?.target;
+        return a.playState !== "running" || !(target instanceof Element) || !target.closest("[role=dialog],[data-hud-panel],[data-slot=sheet-overlay],[data-slot=dialog-overlay]");
+      }),
+    undefined,
+    { timeout: 15_000 },
+  );
+}
+
 async function expectNoViolations(page: Page, state: string) {
+  await panelsSettled(page);
   const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]).analyze();
   const summary = violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(" | ")}`);
   expect(summary, `axe violations on ${state}`).toEqual([]);

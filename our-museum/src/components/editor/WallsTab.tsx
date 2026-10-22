@@ -201,11 +201,15 @@ export function WallsTab() {
       const versions = known.filter((v): v is number => typeof v === "number" && v > 0);
       const expectedVersion = versions.length ? Math.max(...versions) : undefined;
       try {
-        const saved = await mutate<{ version: number }>(`/api/museums/${museumId}/frames/${frameId}`, {
-          method: "PATCH",
-          body: { ...patch, height: undefined, allowOverlap: allowOverlap || undefined, expectedVersion },
-        });
+        const saved = await mutate<{ version: number }>(
+          `/api/museums/${museumId}/frames/${frameId}`,
+          { method: "PATCH", body: { ...patch, height: undefined, allowOverlap: allowOverlap || undefined, expectedVersion } },
+          { refresh: false },
+        );
         knownVersion.current.set(frameId, saved.version);
+        // No scene reload after a successful save: the screen already shows it, and a
+        // reload landing late would put back an older position over newer quick moves.
+        patchScene((sc) => ({ ...sc, frames: sc.frames.map((f) => (f.id === frameId ? { ...f, version: Math.max(f.version, saved.version) } : f)) }));
       } catch (e) {
         toast.error(errorText(e));
         // Drop the optimistic change and show what is actually saved.
@@ -265,7 +269,8 @@ export function WallsTab() {
   };
 
   const nudge = (frameId: string, du: number, dv: number) => {
-    const f = wallFrames.find((x) => x.id === frameId);
+    // From the store, not this render: quick key presses can arrive before React re-renders.
+    const f = useMuseumStore.getState().scene?.frames.find((x) => x.id === frameId);
     if (!f) return;
     const candidate = { ...toPlacement(f), u: Math.round((f.u + du) * 1000) / 1000, v: Math.round((f.v + dv) * 1000) / 1000 };
     const check = checkPlacement(spec.bounds, candidate, others(frameId), { allowOverlap });

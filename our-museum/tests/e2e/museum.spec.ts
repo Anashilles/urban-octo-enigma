@@ -63,10 +63,14 @@ test("frame edits: quick nudges save in order, and someone else's change is neve
   const start = await serverFrame();
 
   // Six quick arrow presses: each save waits for the previous one, so none collide.
+  // On a slowed-down CPU presses arrive before the editor re-renders; none may be lost.
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
   await page.getByTestId("wall-elevation").locator("svg").first().focus();
   for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
-  await expect(page.getByTestId("save-status")).toHaveAttribute("data-state", "saved", { timeout: 30_000 });
-  await expect.poll(async () => (await serverFrame()).u).toBeCloseTo(start.u + 0.3, 3);
+  await expect(page.getByTestId("save-status")).toHaveAttribute("data-state", "saved", { timeout: 60_000 });
+  await expect.poll(async () => (await serverFrame()).u, { timeout: 30_000 }).toBeCloseTo(start.u + 0.3, 3);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
   await expect(page.locator("[data-sonner-toast][data-type=error]")).toHaveCount(0);
 
   // Another editor moves the frame (this page has not seen it yet)…
