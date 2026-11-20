@@ -12,3 +12,4 @@
 
 # shorts-clipper output
 shorts_out/
+__pycache__/
