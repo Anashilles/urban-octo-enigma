@@ -9,3 +9,6 @@
 # Editors / OS
 .DS_Store
 *.swp
+
+# shorts-clipper output
+shorts_out/
