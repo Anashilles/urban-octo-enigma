@@ -309,11 +309,11 @@ def detect_moments(duration: float, chat: list, heatmap: list | None, args) -> l
             start = end - args.max_len
         bits = []
         if E[b] > 0.25:
-            bits.append(f"emotional chat {E[b]:.0%}")
+            bits.append(f"دردشة عاطفية {E[b]:.0%}")
         if S[b] > 0.25:
-            bits.append(f"chat spike {S[b]:.0%}")
+            bits.append(f"قفزة في الدردشة {S[b]:.0%}")
         if H[b] > 0.25:
-            bits.append(f"most-replayed {H[b]:.0%}")
+            bits.append(f"الأكثر إعادة {H[b]:.0%}")
         # sample of what chat said around the peak
         samples, seen = [], set()
         near = [m for k in range(b - win, b + win + 1) for m in bin_msgs.get(k, [])]
@@ -326,7 +326,7 @@ def detect_moments(duration: float, chat: list, heatmap: list | None, args) -> l
             if len(samples) >= 6:
                 break
         moments.append(Moment(0, peak, start, end, round(score[b], 3),
-                              ", ".join(bits) or "top score", samples))
+                              "، ".join(bits) or "أعلى نتيجة", samples))
     moments.sort(key=lambda m: m.peak)
     for i, m in enumerate(moments, 1):
         m.rank = i
@@ -340,14 +340,63 @@ def moments_from_timestamps(spec: str, duration: float | None) -> list[Moment]:
         s, e = parse_ts(a), parse_ts(z) if z.strip() else parse_ts(a) + 45
         if duration:
             e = min(e, duration)
-        out.append(Moment(i, (s + e) / 2, s, e, 1.0, "manual"))
+        out.append(Moment(i, (s + e) / 2, s, e, 1.0, "يدوي"))
     return out
+
+
+# --------------------------------------------------------------------------
+# YouTube thumbnail
+# --------------------------------------------------------------------------
+def fetch_thumbnail(vid: str, info: dict, work: Path) -> Path | None:
+    """Download the video's YouTube thumbnail and normalise it to a 16:9 JPEG."""
+    import urllib.request
+
+    out = work / "yt_thumbnail.jpg"
+    if out.exists():
+        return out
+    urls = [info.get("thumbnail")] + [f"https://i.ytimg.com/vi/{vid}/{n}.jpg"
+                                      for n in ("maxresdefault", "sddefault", "hqdefault")]
+    raw = work / "yt_thumbnail_raw"
+    for u in [u for u in urls if u]:
+        try:
+            with urllib.request.urlopen(u, timeout=30) as r:
+                raw.write_bytes(r.read())
+            break
+        except Exception:
+            continue
+    else:
+        return None
+    # sddefault / hqdefault are 4:3 with black bars: crop them back to 16:9
+    run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(raw),
+         "-vf", "crop='iw':'min(ih,trunc(iw*9/16/2)*2)',scale=1280:-2",
+         "-frames:v", "1", "-q:v", "2", str(out)], quiet=True)
+    return out
+
+
+def thumb_placement(layout: str, pos: str, src_w: int, src_h: int) -> tuple[int, int, int]:
+    """Return (thumbnail width without border, x, y) on the output canvas."""
+    border = 8
+    if layout == "landscape":
+        return 480, 40, 40
+    if layout == "crop":
+        tw = 760
+        th = tw * 9 // 16 + 2 * border
+        return tw, (1080 - tw - 2 * border) // 2, 150 if pos == "top" else 1920 - th - 420
+    fg_h = int(round(1080 * src_h / max(src_w, 1) / 2)) * 2
+    y0 = (1920 - fg_h) // 2
+    room = y0 - 50 - 100  # gap to the video + safe margin from the screen edge
+    th = min(840 * 9 // 16, room - 2 * border)
+    tw = max(int(th * 16 / 9) // 2 * 2, 320)
+    th = tw * 9 // 16 + 2 * border
+    x = (1080 - tw - 2 * border) // 2
+    return tw, x, (y0 - th - 50) if pos == "top" else (y0 + fg_h + 50)
 
 
 # --------------------------------------------------------------------------
 # Rendering
 # --------------------------------------------------------------------------
-def build_filters(layout: str, dur: float, has_audio: bool) -> tuple[str, list[str]]:
+def build_filters(layout: str, dur: float, has_audio: bool,
+                  thumb: tuple[int, int, int] | None = None) -> tuple[str, list[str]]:
     fo = max(dur - 0.6, 0)
     fades = f"fade=t=in:st=0:d=0.4,fade=t=out:st={fo:.2f}:d=0.6"
     if layout == "blur":
@@ -355,12 +404,19 @@ def build_filters(layout: str, dur: float, has_audio: bool) -> tuple[str, list[s
              "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
              "gblur=sigma=28,eq=brightness=-0.07[bg];"
              "[b]scale=1080:-2:flags=lanczos[fg];"
-             f"[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1,{fades},format=yuv420p[v]")
+             "[bg][fg]overlay=(W-w)/2:(H-h)/2[base]")
     elif layout == "crop":
-        v = (f"[0:v]scale=-2:1920:flags=lanczos,crop=1080:1920,setsar=1,{fades},"
-             "format=yuv420p[v]")
+        v = "[0:v]scale=-2:1920:flags=lanczos,crop=1080:1920[base]"
     else:  # landscape
-        v = f"[0:v]scale=1920:-2:flags=lanczos,setsar=1,{fades},format=yuv420p[v]"
+        v = "[0:v]scale=1920:-2:flags=lanczos[base]"
+    if thumb:
+        tw, tx, ty = thumb
+        v += (f";[1:v]scale={tw}:-2:flags=lanczos,pad=iw+16:ih+16:8:8:color=white[th];"
+              f"[base][th]overlay={tx}:{ty}[base2]")
+        last = "[base2]"
+    else:
+        last = "[base]"
+    v += f";{last}setsar=1,{fades},format=yuv420p[v]"
     maps = ["-map", "[v]"]
     if has_audio:
         v += (f";[0:a]afade=t=in:st=0:d=0.3,afade=t=out:st={fo:.2f}:d=0.6,"
@@ -369,13 +425,20 @@ def build_filters(layout: str, dur: float, has_audio: bool) -> tuple[str, list[s
     return v, maps
 
 
-def render(src: Path, ss: float, dur: float, out: Path, layout: str, crf: int) -> None:
+def render(src: Path, ss: float, dur: float, out: Path, layout: str, crf: int,
+           thumb_img: Path | None = None, thumb_pos: str = "top") -> None:
     info = ffprobe_json(src)
-    has_audio = any(s.get("codec_type") == "audio" for s in info.get("streams", []))
-    graph, maps = build_filters(layout, dur, has_audio)
+    streams = info.get("streams", [])
+    has_audio = any(s.get("codec_type") == "audio" for s in streams)
+    vs = next(s for s in streams if s.get("codec_type") == "video")
+    place = (thumb_placement(layout, thumb_pos, int(vs["width"]), int(vs["height"]))
+             if thumb_img else None)
+    graph, maps = build_filters(layout, dur, has_audio, place)
     cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-           "-ss", f"{ss:.3f}", "-i", str(src), "-t", f"{dur:.3f}",
-           "-filter_complex", graph, *maps,
+           "-ss", f"{ss:.3f}", "-i", str(src)]
+    if thumb_img:
+        cmd += ["-i", str(thumb_img)]
+    cmd += ["-t", f"{dur:.3f}", "-filter_complex", graph, *maps,
            "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
            "-profile:v", "high", "-movflags", "+faststart"]
     if has_audio:
@@ -418,15 +481,15 @@ def fetch_metadata(url: str, work: Path, want_chat: bool, extra: list[str]) -> N
 def write_report(moments: list[Moment], out: Path, vid: str, title: str) -> None:
     (out / "moments.json").write_text(
         json.dumps([asdict(m) for m in moments], ensure_ascii=False, indent=2), encoding="utf-8")
-    lines = [f"# {title}", "", f"Source: https://www.youtube.com/watch?v={vid}", "",
-             "| # | Time in stream | Length | Why | File |", "|---|---|---|---|---|"]
+    lines = [f"# {title}", "", f"المصدر: https://www.youtube.com/watch?v={vid}", "",
+             "| # | الوقت في البث | المدة | سبب الاختيار | الملف |", "|---|---|---|---|---|"]
     for m in moments:
         link = f"[{fmt_ts(m.start)} → {fmt_ts(m.end)}](https://www.youtube.com/watch?v={vid}&t={int(m.start)}s)"
-        lines.append(f"| {m.rank} | {link} | {m.duration:.0f}s | {m.reason} | {m.file or '-'} |")
+        lines.append(f"| {m.rank} | {link} | {m.duration:.0f} ث | {m.reason} | {m.file or '-'} |")
     lines.append("")
     for m in moments:
         if m.chat_samples:
-            lines.append(f"**#{m.rank} — chat at {fmt_ts(m.peak)}:** " +
+            lines.append(f"**#{m.rank} — ماذا كتبت الدردشة عند {fmt_ts(m.peak)}:** " +
                          " · ".join(f"“{s}”" for s in m.chat_samples))
             lines.append("")
     (out / "moments.md").write_text("\n".join(lines), encoding="utf-8")
@@ -449,6 +512,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--layout", choices=["blur", "crop", "landscape"], default="blur",
                     help="blur: full frame on blurred 9:16 background (default); "
                          "crop: centre-crop to 9:16; landscape: keep 16:9")
+    ap.add_argument("--thumb-position", choices=["top", "bottom", "none"], default="top",
+                    help="where the stream's YouTube thumbnail appears in each clip (default top)")
+    ap.add_argument("--thumb", type=Path, help="use this image instead of the YouTube thumbnail")
     ap.add_argument("--crf", type=int, default=20, help="x264 quality, lower = better (default 20)")
     ap.add_argument("--timestamps", help='manual moments, e.g. "1:02:10-1:02:58, 3:15:00-3:15:45"')
     ap.add_argument("--video", type=Path, help="local copy of the full stream (skips per-clip download)")
@@ -509,6 +575,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # 3. cut + render ---------------------------------------------------------
     print("\n[3/3] Cutting and rendering vertical clips...")
+    thumb_img = None
+    if args.thumb_position != "none":
+        thumb_img = args.thumb or fetch_thumbnail(vid, info, work)
+        if thumb_img is None:
+            print("  ! could not download the YouTube thumbnail; clips will have none")
     for m in moments:
         name = f"{m.rank:02d}_{fmt_ts(m.start).replace(':', '-')}"
         dst = out / f"{name}.mp4"
@@ -516,7 +587,7 @@ def main(argv: list[str] | None = None) -> int:
             src, ss = args.video, m.start
         else:
             src, ss = download_section(args.url, m.start, m.end, work / f"raw_{name}", args.yt_dlp_arg), 0.0
-        render(src, ss, m.duration, dst, args.layout, args.crf)
+        render(src, ss, m.duration, dst, args.layout, args.crf, thumb_img, args.thumb_position)
         thumbnail(dst, min(m.peak - m.start, m.duration - 1), out / f"{name}.jpg")
         m.file = dst.name
         print(f"  ✓ {dst}")
